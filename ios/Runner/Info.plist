@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Flutter standard configuration -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>SOS1</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>sos1</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    
+    <!-- Microphone permission for speech recognition -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>SOS1 needs access to your microphone to listen for emergency voice commands. This is essential for the app to function as a voice-based emergency assistant.</string>
+    
+    <!-- Speech recognition permission -->
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>SOS1 uses speech recognition to understand your emergency commands and provide appropriate assistance.</string>
+    
+    <!-- Location permissions for emergency services -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>SOS1 needs your location to provide accurate emergency assistance and share it with emergency services when needed.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>SOS1 needs continuous location access to ensure emergency services can find you even when the app is in the background.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>SOS1 requires location access at all times to provide emergency assistance when needed.</string>
+    
+    <!-- Camera permission (if needed for emergency documentation) -->
+    <key>NSCameraUsageDescription</key>
+    <string>SOS1 may use the camera to document emergency situations if needed.</string>
+    
+    <!-- Photo library permission -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>SOS1 may need to access photos for emergency documentation.</string>
+    
+    <!-- Background modes for emergency -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>audio</string>
+        <string>location</string>
+        <string>processing</string>
+    </array>
+    
+    <!-- Keep app active during emergency -->
+    <key>UIRequiresPersistentWiFi</key>
+    <true/>
+    
+    <!-- Flutter standard configuration continued -->
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <false/>
+    
+    <!-- Flutter deep linking support -->
+    <key>FlutterDeepLinkingEnabled</key>
+    <true/>
+    
+</dict>
+</plist>
