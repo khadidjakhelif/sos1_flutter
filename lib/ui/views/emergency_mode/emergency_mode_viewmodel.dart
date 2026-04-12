@@ -1,19 +1,23 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
+import 'package:sos1/models/language.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/app/app.locator.dart';
 import 'package:sos1/services/ai_emergency_assistant.dart';
 import 'package:sos1/services/ai_tts_service.dart';
+import 'package:sos1/services/language_service.dart';
 import 'package:sos1/services/sos_history_service.dart';
 import 'package:sos1/models/sos_incident.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+
 
 class EmergencyModeViewModel extends BaseViewModel {
   final _aiAssistant = locator<AIEmergencyAssistant>();
   final _aiTts = locator<AITtsService>();
   final _historyService = locator<SOSHistoryService>();
   final _navigationService = locator<NavigationService>();
+  final _languageService = locator<LanguageService>();
 
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
@@ -42,6 +46,9 @@ class EmergencyModeViewModel extends BaseViewModel {
   Duration get elapsedTime => _elapsedTime.value;
 
   final TextEditingController textController = TextEditingController();
+
+  String get currentLanguage => _languageService.currentLanguage.displayName;
+  String get languageCode => _languageService.currentLanguage.code;
 
   @override
   void dispose() {
@@ -120,6 +127,7 @@ class EmergencyModeViewModel extends BaseViewModel {
       _sendTranscript();
     } else {
       _isListening = true;
+      print('🎤 Toggle listening - Language: ${_languageService.currentLanguage.code}');
       notifyListeners();
       await _speech.listen(
         onResult: (result) {
@@ -130,7 +138,7 @@ class EmergencyModeViewModel extends BaseViewModel {
           );
           notifyListeners();
         },
-        localeId: _getLocaleId(),   // matches your app language
+        localeId: _getLocaleId(),   // get app language
         pauseFor: const Duration(seconds: 3),
         listenFor: const Duration(seconds: 30),
       );
@@ -146,20 +154,31 @@ class EmergencyModeViewModel extends BaseViewModel {
   }
 
   String _getLocaleId() {
-    // Match your LanguageProvider logic
-    // return 'fr-FR', 'ar-DZ', or 'en-US'
-    return 'fr-FR'; // default for now
+    final langMap = {
+      'fr': 'fr-FR',
+      'ar': 'ar-DZ',
+      'en': 'en-US',
+    };
+    return langMap[_languageService.currentLanguage.code] ?? 'fr-FR';
   }
 
   Future<void> sendMessage(String message) async {
     final trimmed = message.trim();
     if (trimmed.isNotEmpty) {
       print('📤 [1] sendMessage START: "$trimmed"');
-      await _aiAssistant.processUserMessage(trimmed);
+      await _aiAssistant.processUserMessage(trimmed,_languageService.getLanguageCode());
       print('📤 [3] AI processing COMPLETE');
       notifyListeners();
       print('📤 [4] UI notified');
     }
+  }
+
+  String _getEmergencyNumber(String type) {
+    final numbers = {
+      'cardiac': '15', 'medical': '15', 'bleeding': '15',
+      'choking': '15', 'fire': '14', 'police': '17',
+    };
+    return numbers[type.toLowerCase()] ?? '15';
   }
 
   Future<void> nextStep() async {
@@ -171,37 +190,28 @@ class EmergencyModeViewModel extends BaseViewModel {
   }
 
   Future<void> callEmergencyServices() async {
-    // Get emergency number based on type
     final emergencyNumber = _getEmergencyNumber(_emergencyType);
-    
-    // Speak confirmation
-    await _aiTts.speak(
-      "Appel des secours au $emergencyNumber en cours.",
-      urgent: true,
-    );
-    
-    // Launch phone call
-    // await _launchPhoneCall(emergencyNumber);
-  }
+    final langCode = _languageService.currentLanguage.code;
 
-  String _getEmergencyNumber(String type) {
-    final numbers = {
-      'cardiac': '15',
-      'medical': '15',
-      'bleeding': '15',
-      'choking': '15',
-      'unconscious': '15',
-      'fire': '18',
-      'police': '17',
-    };
-    return numbers[type.toLowerCase()] ?? '15';
+    // ✅ Language-aware confirmation
+    final confirmation = {
+      'fr': "Appel des secours au $emergencyNumber en cours.",
+      'ar': "الاتصال بخدمات الطوارئ على $emergencyNumber جارٍ.",
+      'en': "Calling emergency services at $emergencyNumber.",
+    }[langCode] ?? "Calling emergency services.";
+
+    await _aiTts.speak(confirmation, urgent: true);
   }
 
   Future<void> shareLocation() async {
-    await _aiTts.speak(
-      "Partage de votre position GPS avec les secours.",
-      urgent: true,
-    );
+    final langCode = _languageService.currentLanguage.code;
+    final message = {
+      'fr': "Partage de votre position GPS avec les secours.",
+      'ar': "مشاركة موقع GPS الخاص بك مع خدمات الإنقاذ.",
+      'en': "Sharing your GPS location with emergency services.",
+    }[langCode] ?? "Sharing your location.";
+
+    await _aiTts.speak(message, urgent: true);
   }
 
   Future<void> endEmergency() async {

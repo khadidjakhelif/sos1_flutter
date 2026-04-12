@@ -1,21 +1,25 @@
 import 'dart:async';
 import 'package:stacked/stacked.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import '../utils/app_config.dart';
+import '../services/ai_provider_service.dart';
 import 'ai_tts_service.dart';
+import 'language_service.dart';
 
 /// AI Emergency Assistant Service
 /// Provides conversational AI guidance during emergencies
 class AIEmergencyAssistant with ListenableServiceMixin {
-  GenerativeModel? _chatModel;
-  ChatSession? _chatSession;
-  
+  // CHANGED: replaced GenerativeModel + ChatSession with AIProviderService
+  final AIProviderService _aiProvider = AIProviderService();
+  final List<Map<String, String>> _conversationHistory = [];
+
+  LanguageService? _languageService;
+
   final ReactiveValue<bool> _isProcessing = ReactiveValue<bool>(false);
   final ReactiveValue<List<ChatMessage>> _messages = ReactiveValue<List<ChatMessage>>([]);
   final ReactiveValue<String> _currentStep = ReactiveValue<String>('');
   final ReactiveValue<int> _currentStepIndex = ReactiveValue<int>(0);
   final ReactiveValue<bool> _isEmergencyActive = ReactiveValue<bool>(false);
-  
+
   bool get isProcessing => _isProcessing.value;
   List<ChatMessage> get messages => _messages.value;
   String get currentStep => _currentStep.value;
@@ -26,31 +30,31 @@ class AIEmergencyAssistant with ListenableServiceMixin {
   Timer? _stepTimer;
   final AITtsService _ttsService;
 
-  AIEmergencyAssistant(this._ttsService) {
+  AIEmergencyAssistant(this._ttsService, [this._languageService]) {
     _initializeAI();
   }
 
+  // CHANGED: initialize AIProviderService instead of GenerativeModel
   Future<void> _initializeAI() async {
     try {
-      _chatModel = GenerativeModel(
-        model: 'gemini-2.5-flash',
-        apiKey: AppConfig.geminiApiKey,
-        generationConfig: GenerationConfig(
-          temperature: 0.2,
-          maxOutputTokens: 1024,
-        ),
-      );
-      
-      _startNewSession();
+      await _aiProvider.initialize(systemPrompt: _buildSystemPrompt());
+      print('✅ AI initialized: ${_aiProvider.providerName}');
     } catch (e) {
       print('AI Assistant initialization error: $e');
     }
   }
 
+  // CHANGED: reset history + provider session instead of rebuilding ChatSession
   void _startNewSession() {
-    if (_chatModel != null) {
-      _chatSession = _chatModel!.startChat(history: [
-        Content.text('''
+    _conversationHistory.clear();
+    _aiProvider.resetSession(systemPrompt: _buildSystemPrompt());
+  }
+
+  // CHANGED: was hardcoded French — now picks language from LanguageService
+  String _buildSystemPrompt() {
+    final langCode = _languageService?.getLanguageCode() ?? 'fr';
+    return {
+      'fr': '''
 Tu es un assistant d'urgence médicale professionnel pour SOS Algérie. 
 Tu dois:
 1. Fournir des instructions claires et concises
@@ -60,9 +64,30 @@ Tu dois:
 5. Prioriser la sécurité de la victime
 
 Réponds en français, de manière concise (1-2 phrases max par message).
-'''),
-      ]);
-    }
+''',
+      'ar': '''
+أنت مساعد طوارئ طبية محترف لـ SOS الجزائر.
+يجب عليك:
+1. تقديم تعليمات واضحة وموجزة بالعربية
+2. البقاء هادئاً ومطمئناً
+3. طرح أسئلة لتقييم الوضع
+4. التوجيه خطوة بخطوة
+5. إعطاء الأولوية لسلامة الضحية
+
+أجب بالعربية، جملتين كحد أقصى.
+''',
+      'en': '''
+You are a professional medical emergency assistant for SOS Algeria.
+You must:
+1. Provide clear and concise instructions
+2. Stay calm and reassuring
+3. Ask questions to assess the situation
+4. Guide step by step
+5. Prioritize the victim's safety
+
+Respond in English, concisely (1-2 sentences max per message).
+''',
+    }[langCode] ?? 'You are a professional emergency assistant. Be concise.';
   }
 
   /// Start a new emergency session
@@ -70,48 +95,61 @@ Réponds en français, de manière concise (1-2 phrases max par message).
     required String emergencyType,
     String? userMessage,
     String? location,
+    String language = 'Francais',
   }) async {
     _isEmergencyActive.value = true;
     _messages.value = [];
     _currentStepIndex.value = 0;
+    _startNewSession(); // CHANGED: resets history for each new emergency
     notifyListeners();
-    
-    // Load appropriate protocol
+
     _activeProtocol = EmergencyProtocols.getProtocol(emergencyType);
-    
+
     if (_activeProtocol != null) {
-      // Use predefined protocol
       await _startProtocolGuidance(_activeProtocol!);
     } else {
-      // Use AI for dynamic guidance
       await _startAIGuidance(emergencyType, userMessage, location);
     }
   }
 
   /// Start predefined protocol guidance
+  /// CHANGED: welcome text is now language-aware
   Future<void> _startProtocolGuidance(EmergencyProtocol protocol) async {
-    // Welcome message
+    final langCode = _languageService?.getLanguageCode() ?? 'fr';
+    final welcomeText = {
+      'fr': 'Urgence détectée: ${protocol.name}. Je vais vous guider étape par étape.',
+      'ar': 'تم اكتشاف حالة طوارئ: ${protocol.name}. سأرشدك خطوة بخطوة.',
+      'en': 'Emergency detected: ${protocol.name}. I will guide you step by step.',
+    }[langCode] ?? 'Urgence détectée: ${protocol.name}.';
+
     final welcomeMessage = ChatMessage(
       isUser: false,
-      text: "Urgence détectée: ${protocol.name}. Je vais vous guider étape par étape.",
+      text: welcomeText,
       timestamp: DateTime.now(),
     );
     _addMessage(welcomeMessage);
-    
+
     await _ttsService.speak(welcomeMessage.text, urgent: true);
     await Future.delayed(const Duration(seconds: 2));
-    
-    // Start step-by-step guidance
+
     _processNextStep();
   }
 
   /// Process next step in the protocol
+  /// CHANGED: step label and complete message are now language-aware
   Future<void> _processNextStep() async {
+    final langCode = _languageService?.getLanguageCode() ?? 'fr';
+
     if (_activeProtocol == null || _currentStepIndex.value >= _activeProtocol!.steps.length) {
-      // Protocol complete
+      final completeText = {
+        'fr': 'Protocole terminé. Les secours sont en route. Continuez à surveiller la victime.',
+        'ar': 'انتهى البروتوكول. فرق الإنقاذ في الطريق. استمر في مراقبة الضحية.',
+        'en': 'Protocol complete. Emergency services are on the way. Keep monitoring the victim.',
+      }[langCode] ?? 'Protocole terminé.';
+
       final completeMessage = ChatMessage(
         isUser: false,
-        text: "Protocole terminé. Les secours sont en route. Continuez à surveiller la victime.",
+        text: completeText,
         timestamp: DateTime.now(),
         isImportant: true,
       );
@@ -119,22 +157,27 @@ Réponds en français, de manière concise (1-2 phrases max par message).
       await _ttsService.speak(completeMessage.text, urgent: true);
       return;
     }
-    
+
     final step = _activeProtocol!.steps[_currentStepIndex.value];
     _currentStep.value = step;
-    
+
+    final stepLabel = {
+      'fr': 'Étape ${_currentStepIndex.value + 1}: $step',
+      'ar': 'الخطوة ${_currentStepIndex.value + 1}: $step',
+      'en': 'Step ${_currentStepIndex.value + 1}: $step',
+    }[langCode] ?? 'Étape ${_currentStepIndex.value + 1}: $step';
+
     final stepMessage = ChatMessage(
       isUser: false,
-      text: "Étape ${_currentStepIndex.value + 1}: $step",
+      text: stepLabel,
       timestamp: DateTime.now(),
       isStep: true,
       stepNumber: _currentStepIndex.value + 1,
     );
     _addMessage(stepMessage);
-    
+
     await _ttsService.speak(stepMessage.text, urgent: true);
-    
-    // Auto-advance after delay (or wait for user confirmation)
+
     _stepTimer = Timer(const Duration(seconds: 15), () {
       if (_isEmergencyActive.value) {
         _currentStepIndex.value++;
@@ -145,70 +188,79 @@ Réponds en français, de manière concise (1-2 phrases max par message).
   }
 
   /// Start AI-powered dynamic guidance
+  /// CHANGED: _chatSession?.sendMessage → _aiProvider.sendMessage
   Future<void> _startAIGuidance(
-    String emergencyType,
-    String? userMessage,
-    String? location,
-  ) async {
+      String emergencyType,
+      String? userMessage,
+      String? location,
+      ) async {
     _isProcessing.value = true;
     notifyListeners();
-    
-    final prompt = '''
-L'utilisateur a signalé une urgence de type: $emergencyType
-${userMessage != null ? 'Message: $userMessage' : ''}
-${location != null ? 'Localisation: $location' : ''}
 
-Fournis la première instruction immédiate (1 phrase max) et pose une question pour évaluer la gravité.
-''';try {
-      final response = await _chatSession?.sendMessage(Content.text(prompt));
-      final aiResponse = response?.text ?? _getFallbackResponse(emergencyType);
-      
+    final langCode = _languageService?.getLanguageCode() ?? 'fr';
+    final langName = {'fr': 'French', 'ar': 'Arabic', 'en': 'English'}[langCode] ?? 'French';
+
+    final prompt = '''
+Emergency type: $emergencyType
+${userMessage != null ? 'Message: $userMessage' : ''}
+${location != null ? 'Location: $location' : ''}
+
+Provide the first immediate instruction (1 sentence max) and ask one question to assess severity.
+Respond in $langName.
+''';
+
+    try {
+      // CHANGED: was _chatSession?.sendMessage(Content.text(prompt))?.text
+      final aiResponse = await _aiProvider.sendMessage(
+        prompt,
+        history: _conversationHistory,
+        systemPrompt: _buildSystemPrompt(),
+      ) ?? _getFallbackResponse(emergencyType);
+
+      _conversationHistory.add({'role': 'user', 'content': prompt});
+      _conversationHistory.add({'role': 'assistant', 'content': aiResponse});
+
       final message = ChatMessage(
         isUser: false,
         text: aiResponse,
         timestamp: DateTime.now(),
       );
       _addMessage(message);
-      
       await _ttsService.speak(aiResponse, urgent: true);
     } catch (e) {
       print('AI guidance error: $e');
       final fallback = _getFallbackResponse(emergencyType);
-      
       final message = ChatMessage(
         isUser: false,
         text: fallback,
         timestamp: DateTime.now(),
       );
       _addMessage(message);
-      
       await _ttsService.speak(fallback, urgent: true);
     }
-    
+
     _isProcessing.value = false;
     notifyListeners();
   }
 
   /// Process user message during emergency
-  Future<void> processUserMessage(String message) async {
+  /// CHANGED: _chatSession?.sendMessage → _aiProvider.sendMessage
+  Future<void> processUserMessage(String message, [String? languageCode]) async {
     print('🤖 [AI] User: "$message"');
     if (!_isEmergencyActive.value) return;
-    
-    // Add user message
+
     final userChatMessage = ChatMessage(
       isUser: true,
       text: message,
       timestamp: DateTime.now(),
     );
     _addMessage(userChatMessage);
-    
+
     _isProcessing.value = true;
     notifyListeners();
-    
-    // Cancel auto-advance timer
+
     _stepTimer?.cancel();
-    
-    // Check for step advancement keywords
+
     if (_isAdvancementRequest(message)) {
       _currentStepIndex.value++;
       notifyListeners();
@@ -217,36 +269,46 @@ Fournis la première instruction immédiate (1 phrase max) et pose une question 
       notifyListeners();
       return;
     }
-    
-    // Process with AI
+
     try {
-      final response = await _chatSession?.sendMessage(Content.text(message));
-      final aiResponse = response?.text ?? "Je comprends. Continuez à suivre les instructions.";
-      
+      // CHANGED: was _chatSession?.sendMessage(Content.text(message))?.text
+      _conversationHistory.add({'role': 'user', 'content': message});
+
+      final aiResponse = await _aiProvider.sendMessage(
+        message,
+        history: _conversationHistory,
+        systemPrompt: _buildSystemPrompt(),
+      ) ?? _getFallbackResponse('medical');
+
+      _conversationHistory.add({'role': 'assistant', 'content': aiResponse});
+
       final aiMessage = ChatMessage(
         isUser: false,
         text: aiResponse,
         timestamp: DateTime.now(),
       );
       _addMessage(aiMessage);
-      
       await _ttsService.speak(aiResponse, urgent: true);
     } catch (e) {
       print('AI response error: $e');
     }
-    
+
     _isProcessing.value = false;
     notifyListeners();
   }
 
-  /// Check if user wants to advance to next step
+  /// UNCHANGED except added English/Arabic advancement keywords
   bool _isAdvancementRequest(String message) {
     final lowerMessage = message.toLowerCase();
     final advancementKeywords = [
+      // French (original)
       'ok', 'd\'accord', 'fait', 'terminé', 'suivant', 'prochain',
       'étape suivante', 'c\'est bon', 'compris', 'je continue',
+      // English
+      'done', 'next', 'continue', 'got it', 'okay', 'understood', 'proceed',
+      // Arabic
+      'تم', 'حسناً', 'موافق', 'التالي', 'فهمت', 'استمر',
     ];
-    
     return advancementKeywords.any((keyword) => lowerMessage.contains(keyword));
   }
 
@@ -255,7 +317,7 @@ Fournis la première instruction immédiate (1 phrase max) et pose une question 
     notifyListeners();
   }
 
-  /// Advance to next step manually
+  /// UNCHANGED
   Future<void> nextStep() async {
     _stepTimer?.cancel();
     _currentStepIndex.value++;
@@ -263,44 +325,67 @@ Fournis la première instruction immédiate (1 phrase max) et pose une question 
     await _processNextStep();
   }
 
-  /// Repeat current step
+  /// UNCHANGED except repeat prefix is language-aware
   Future<void> repeatStep() async {
     if (_currentStep.value.isNotEmpty && !_ttsService.isSpeaking) {
-      final repeatText = "je répète" + ': ${_currentStep.value}';
-      await _ttsService.speak(repeatText, urgent: true);
+      final langCode = _languageService?.getLanguageCode() ?? 'fr';
+      final prefix = {'fr': 'Je répète', 'ar': 'أعيد', 'en': 'Repeating'}[langCode] ?? 'Je répète';
+      await _ttsService.speak('$prefix: ${_currentStep.value}', urgent: true);
     }
   }
 
-  /// End emergency session
+  /// UNCHANGED except end text is language-aware
   Future<void> endEmergencySession() async {
     _stepTimer?.cancel();
     _isEmergencyActive.value = false;
     _activeProtocol = null;
-    
+
+    final langCode = _languageService?.getLanguageCode() ?? 'fr';
+    final endText = {
+      'fr': "Session d'urgence terminée. Les secours sont arrivés. Prenez soin de vous.",
+      'ar': "انتهت الجلسة. وصلت فرق الإنقاذ. اعتنِ بنفسك.",
+      'en': "Emergency session ended. Help has arrived. Take care of yourself.",
+    }[langCode] ?? "Session d'urgence terminée.";
+
     final endMessage = ChatMessage(
       isUser: false,
-      text: "Session d'urgence terminée. Les secours sont arrivés. Prenez soin de vous.",
+      text: endText,
       timestamp: DateTime.now(),
       isImportant: true,
     );
     _addMessage(endMessage);
-    
     await _ttsService.speak(endMessage.text);
-    
+
     notifyListeners();
     _startNewSession();
   }
 
+  /// UNCHANGED except now multilingual
   String _getFallbackResponse(String emergencyType) {
+    final langCode = _languageService?.getLanguageCode() ?? 'fr';
     final responses = {
-      'cardiac': 'Restez calme. Si la personne ne respire pas, commencez les compressions thoraciques.',
-      'bleeding': 'Appliquez une pression directe sur la plaie avec un tissu propre.',
-      'choking': 'Encouragez la personne à tousser. Si elle ne peut pas respirer, faites la manœuvre de Heimlich.',
-      'fire': 'Évacuez immédiatement. Ne prenez pas l\'ascenseur. Appelez les pompiers.',
+      'fr': {
+        'cardiac': 'Restez calme. Si la personne ne respire pas, commencez les compressions thoraciques.',
+        'bleeding': 'Appliquez une pression directe sur la plaie avec un tissu propre.',
+        'choking': 'Encouragez la personne à tousser. Si elle ne peut pas respirer, faites la manœuvre de Heimlich.',
+        'fire': 'Évacuez immédiatement. Ne prenez pas l\'ascenseur. Appelez les pompiers.',
+      },
+      'ar': {
+        'cardiac': 'اهدأ. إذا لم يتنفس، ابدأ ضغطات الصدر.',
+        'bleeding': 'اضغط مباشرة على الجرح بقماش نظيف.',
+        'choking': 'شجع على السعال. إذا لم يتنفس، قم بمناورة هيمليك.',
+        'fire': 'اخرج فوراً. لا تستخدم المصعد.',
+      },
+      'en': {
+        'cardiac': 'Stay calm. If the person is not breathing, start chest compressions.',
+        'bleeding': 'Apply direct pressure to the wound with a clean cloth.',
+        'choking': 'Encourage the person to cough. If they cannot breathe, perform the Heimlich maneuver.',
+        'fire': 'Evacuate immediately. Do not use the elevator. Call the fire department.',
+      },
     };
-    
-    return responses[emergencyType.toLowerCase()] ?? 
-           'Restez calme. Les secours sont en route. Suivez mes instructions.';
+    return responses[langCode]?[emergencyType.toLowerCase()]
+        ?? responses['fr']![emergencyType.toLowerCase()]
+        ?? 'Restez calme. Les secours sont en route. Suivez mes instructions.';
   }
 
   void dispose() {
@@ -308,7 +393,7 @@ Fournis la première instruction immédiate (1 phrase max) et pose une question 
   }
 }
 
-/// Chat Message Model
+/// Chat Message Model — UNCHANGED
 class ChatMessage {
   final bool isUser;
   final String text;

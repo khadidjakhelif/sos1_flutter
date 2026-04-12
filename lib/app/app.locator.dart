@@ -32,17 +32,17 @@ Future<void> setupLocator({
       environment: environment, environmentFilter: environmentFilter);
 
 // Register dependencies
+  locator.registerLazySingleton(() => LanguageService());
+  locator.registerLazySingleton(() => LanguageProvider());
   locator.registerLazySingleton(() => NavigationService());
   locator.registerLazySingleton(() => SpeechRecognitionService());
   locator.registerLazySingleton(() => TextToSpeechService());
-  locator.registerLazySingleton(() => AITtsService());
+  locator.registerLazySingleton(() => AITtsService(locator<LanguageService>()));
   locator.registerLazySingleton(() => AISpeechService(locator<LanguageService>()));
-  locator.registerLazySingleton(() => AIEmergencyAssistant(locator<AITtsService>()));
+  locator.registerLazySingleton(() => AIEmergencyAssistant(locator<AITtsService>(),locator<LanguageService>()));
   locator.registerLazySingleton(() => ContactsService());
   locator.registerLazySingleton(() => MedicalProfileService());
   locator.registerLazySingleton(() => SOSHistoryService());
-  locator.registerLazySingleton(() => LanguageService());
-  locator.registerLazySingleton(() => LanguageProvider());
 
   // ViewModels get the SAME instances
   locator.registerFactory<EmergencyModeViewModel>(() => EmergencyModeViewModel());

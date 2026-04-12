@@ -64,7 +64,7 @@ class VoiceAssistantViewModel extends BaseViewModel {
   
   void _onEmergencyDetected(EmergencyIntent intent) async {
     print('🔥 EMERGENCY DETECTED: ${intent.type} (${intent.confidence})');
-    if (intent.isHighConfidence) {
+    if (intent.isHighConfidence || intent.needsImmediateResponse == true) {
       print('🚨 HIGH CONFIDENCE - Showing UI');
       _detectedEmergencyType = intent.type;
       _userCommand = intent.rawText;

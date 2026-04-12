@@ -52,7 +52,7 @@ class AISpeechService with ListenableServiceMixin {
   }
 
   String _getLocaleFromLanguage(AppLanguage language) {
-    return language.locale;  // ✅ Uses your existing extension!
+    return language.locale;
   }
 
   Future<void> initialize() async {
@@ -87,7 +87,7 @@ class AISpeechService with ListenableServiceMixin {
       print('❌ Gemini initialization error: $e');
     }
 
-    notifyListeners();  // ← NO GEMINI
+    notifyListeners();
   }
 
   Future<void> playStartBeep() async {
@@ -192,6 +192,10 @@ class AISpeechService with ListenableServiceMixin {
       'breathing': ['respire pas', 'difficulté à respirer', 'essoufflement'],
       'fire': ['feu', 'incendie', 'brûle', 'flamme'],
       'police': ['police', 'vol', 'agression', 'cambriolage', 'danger'],
+      'medical': [
+        'accident', 'crash', 'injured', 'hurt', 'dangerous',
+        'urgence', 'blessé', 'douleur', 'ambulance'
+      ],
     };
     
     for (final entry in keywords.entries) {
@@ -268,71 +272,64 @@ Réponds UNIQUEMENT en JSON:
   EmergencyIntent _parseAIResponse(String aiResponse, String originalText) {
     try {
       print('🔍 Parsing AI response...');
-      print('Raw response length: ${aiResponse.length} characters');
 
-      // Extract JSON from response (handle markdown code blocks)
       String jsonStr = aiResponse;
-
       if (aiResponse.contains('```json')) {
-        print('📦 Found JSON markdown block with "```json"');
         jsonStr = aiResponse.split('```json')[1].split('```')[0];
-        print('Extracted JSON: $jsonStr');
       } else if (aiResponse.contains('```')) {
-        print('📦 Found generic markdown block with "```"');
         jsonStr = aiResponse.split('```')[1].split('```')[0];
-        print('Extracted JSON: $jsonStr');
-      } else {
-        print('📄 No markdown blocks found, using raw response');
       }
 
-      // Simple parsing (in production, use proper JSON parsing)
-      final type = _extractValue(jsonStr, '"type"');
-      final severityStr = _extractValue(jsonStr, '"severity"');
-      final severity = int.tryParse(severityStr ?? '') ?? 5;
+      final type = _extractStringValue(jsonStr, '"type"');
+      // FIX 1: use number extractor for severity
+      final severity = _extractNumberValue(jsonStr, '"severity"') ?? 5;
       final needsImmediate = jsonStr.contains('"needsImmediateResponse": true');
 
       print('📊 Extracted values:');
       print('   type: $type');
-      print('   severity string: $severityStr');
-      print('   severity int: $severity');
+      print('   severity: $severity');
       print('   needsImmediate: $needsImmediate');
 
-      final intent = EmergencyIntent(
-        type: type ?? 'unknown',
-        confidence: severity / 10.0,
+      // FIX 2: boost confidence when needsImmediateResponse is true
+      double confidence = severity / 10.0;
+      if (needsImmediate && confidence < 0.7) {
+        confidence = 0.75; // force high confidence if AI says immediate response needed
+      }
+
+      return EmergencyIntent(
+        type: type ?? 'medical',  // default to 'medical' instead of 'unknown'
+        confidence: confidence,
         rawText: originalText,
         severity: severity,
         needsImmediateResponse: needsImmediate,
         isQuickDetection: false,
       );
-
-      print('✅ Successfully created EmergencyIntent');
-      return intent;
-
     } catch (e) {
       print('❌ Parsing error: $e');
-      print('Stack trace: ${StackTrace.current}');
-
       return EmergencyIntent(
-        type: 'unknown',
-        confidence: 0.5,
+        type: 'medical',
+        confidence: 0.75,
         rawText: originalText,
       );
     }
   }
 
-  String? _extractValue(String json, String key) {
-    print('🔎 Extracting key: $key from JSON');
-
+  String? _extractStringValue(String json, String key) {
     final pattern = '$key\\s*:\\s*"([^"]+)"';
     final regex = RegExp(pattern);
     final match = regex.firstMatch(json);
-
-    final value = match?.group(1);
-    print('   Result: $value');
-
-    return value;
+    return match?.group(1);
   }
+
+// extracts bare numeric values like "severity": 8
+  int? _extractNumberValue(String json, String key) {
+    final pattern = '$key\\s*:\\s*(\\d+)';
+    final regex = RegExp(pattern);
+    final match = regex.firstMatch(json);
+    return match != null ? int.tryParse(match.group(1)!) : null;
+  }
+
+  String? _extractValue(String json, String key) => _extractStringValue(json, key);
 
   void clearRecognizedWords() {
     _recognizedWords.value = '';
