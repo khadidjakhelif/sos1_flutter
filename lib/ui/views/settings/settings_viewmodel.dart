@@ -19,6 +19,14 @@ class SettingsViewModel extends BaseViewModel {
     _navigationService.navigateTo(Routes.medicalProfileView);
   }
 
+  void navigateToPrivacyPolicy() {
+    _navigationService.navigateTo(Routes.privacyPolicyView);
+  }
+
+  void navigateToTermsOfUse() {
+    _navigationService.navigateTo(Routes.termsOfUseView);
+  }
+
   void navigateToEmergencyContacts() {
     _navigationService.navigateTo(Routes.emergencyContactsView);
   }

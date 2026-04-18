@@ -66,6 +66,6 @@ flutter:
   uses-material-design: true
   
   assets:
-    - assets/images/
+    - assets/images/bba_logo.png
     - assets/icons/
     - assets/sounds/

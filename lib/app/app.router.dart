@@ -16,6 +16,8 @@ import 'package:sos1/ui/views/medical_profile/medical_profile_view.dart' as _i4;
 import 'package:sos1/ui/views/settings/settings_view.dart' as _i6;
 import 'package:sos1/ui/views/sos_history/sos_history_view.dart' as _i7;
 import 'package:sos1/ui/views/voice_assistant/voice_assistant_view.dart' as _i2;
+import 'package:sos1/ui/views/legal/privacy_policy/privacy_screen_view.dart'as _i13;
+import 'package:sos1/ui/views/legal/terms_of_use/terms_of_use_view.dart' as _i12;
 import 'package:stacked/stacked.dart' as _i1;
 import 'package:stacked_services/stacked_services.dart' as _i10;
 
@@ -34,6 +36,11 @@ class Routes {
 
   static const emergencyModeView = '/emergency-mode-view';
 
+  static const privacyPolicyView = '/privacy-policy-view';
+
+  static const termsOfUseView = '/terms-of-use-view';
+
+
   static const all = <String>{
     voiceAssistantView,
     emergencyContactsView,
@@ -42,6 +49,8 @@ class Routes {
     settingsView,
     sOSHistoryView,
     emergencyModeView,
+    privacyPolicyView,
+    termsOfUseView,
   };
 }
 
@@ -74,6 +83,14 @@ class StackedRouter extends _i1.RouterBase {
     _i1.RouteDef(
       Routes.emergencyModeView,
       page: _i8.EmergencyModeView,
+    ),
+    _i1.RouteDef(
+      Routes.privacyPolicyView,
+      page: _i13.PrivacyPolicyView,
+    ),
+    _i1.RouteDef(
+      Routes.termsOfUseView,
+      page: _i12.TermsOfUseView,
     ),
   ];
 
@@ -122,6 +139,18 @@ class StackedRouter extends _i1.RouterBase {
             emergencyType: args.emergencyType,
             emergencyDescription: args.emergencyDescription,
             location: args.location),
+        settings: data,
+      );
+    },
+    _i12.TermsOfUseView: (data) {
+      return _i9.MaterialPageRoute<dynamic>(
+        builder: (context) => const _i12.TermsOfUseView(),
+        settings: data,
+      );
+    },
+    _i13.PrivacyPolicyView: (data) {
+      return _i9.MaterialPageRoute<dynamic>(
+        builder: (context) => const _i13.PrivacyPolicyView(),
         settings: data,
       );
     },
@@ -244,6 +273,34 @@ extension NavigatorStateExtension on _i10.NavigationService {
         transition: transition);
   }
 
+  Future<dynamic> navigateToPrivacyPolicyView([
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  ]) async {
+    return navigateTo<dynamic>(Routes.privacyPolicyView,
+        id: routerId,
+        preventDuplicates: preventDuplicates,
+        parameters: parameters,
+        transition: transition);
+  }
+
+  Future<dynamic> navigateToTermsOfUseView([
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  ]) async {
+    return navigateTo<dynamic>(Routes.termsOfUseView,
+        id: routerId,
+        preventDuplicates: preventDuplicates,
+        parameters: parameters,
+        transition: transition);
+  }
+
   Future<dynamic> navigateToSOSHistoryView([
     int? routerId,
     bool preventDuplicates = true,
@@ -345,6 +402,34 @@ extension NavigatorStateExtension on _i10.NavigationService {
         transition,
   ]) async {
     return replaceWith<dynamic>(Routes.settingsView,
+        id: routerId,
+        preventDuplicates: preventDuplicates,
+        parameters: parameters,
+        transition: transition);
+  }
+
+  Future<dynamic> replaceWithPrivacyPolicyView([
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  ]) async {
+    return replaceWith<dynamic>(Routes.privacyPolicyView,
+        id: routerId,
+        preventDuplicates: preventDuplicates,
+        parameters: parameters,
+        transition: transition);
+  }
+
+  Future<dynamic> replaceWithTermsOfUseView([
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  ]) async {
+    return replaceWith<dynamic>(Routes.termsOfUseView,
         id: routerId,
         preventDuplicates: preventDuplicates,
         parameters: parameters,

@@ -70,7 +70,7 @@ class SOSHistoryView extends StackedView<SOSHistoryViewModel> {
             'SOS HISTORY',
             style: TextStyle(
               fontSize: 18.sp,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               color: Colors.white,
               letterSpacing: 2,
             ),
