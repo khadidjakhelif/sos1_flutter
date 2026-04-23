@@ -7,6 +7,8 @@ import 'app/app.locator.dart';
 import 'app/app.router.dart';
 import 'utils/app_theme.dart';
 import 'utils/app_language_provider.dart';
+import 'models/medical_profile.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,8 +16,20 @@ void main() async {
   // Quick test - remove after verifying
   print('API Key loaded: ${AppConfig.geminiApiKey.isNotEmpty ? "✅ YES" : "❌ NO"}');
 
-  // Initialize Stacked services
+
+  // Initialize HiveBox
+  await Hive.initFlutter();
+
+  // Register adapters — order doesn't matter
+  Hive.registerAdapter(MedicalProfileAdapter());
+  Hive.registerAdapter(ICEContactAdapter());
+  Hive.registerAdapter(BloodTypeAdapter());
+
+  // Open the box before the locator so the service can access it
+  await Hive.openBox<MedicalProfile>('medicalProfile');
+
   await setupLocator();
+
 
   // Initialize LanguageProvider
   final languageProvider = locator<LanguageProvider>();

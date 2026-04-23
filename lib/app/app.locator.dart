@@ -18,7 +18,6 @@ import '../services/medical_profile_service.dart';
 import '../services/sos_history_service.dart';
 import '../services/speech_recognition_service.dart';
 import '../services/text_to_speech_service.dart';
-import '../ui/views/emergency_mode/emergency_mode_viewmodel.dart';
 import '../utils/app_language_provider.dart';
 
 final locator = StackedLocator.instance;
@@ -32,18 +31,20 @@ Future<void> setupLocator({
       environment: environment, environmentFilter: environmentFilter);
 
 // Register dependencies
-  locator.registerLazySingleton(() => LanguageService());
-  locator.registerLazySingleton(() => LanguageProvider());
   locator.registerLazySingleton(() => NavigationService());
   locator.registerLazySingleton(() => SpeechRecognitionService());
   locator.registerLazySingleton(() => TextToSpeechService());
-  locator.registerLazySingleton(() => AITtsService(locator<LanguageService>()));
-  locator.registerLazySingleton(() => AISpeechService(locator<LanguageService>()));
-  locator.registerLazySingleton(() => AIEmergencyAssistant(locator<AITtsService>(),locator<LanguageService>()));
+  locator.registerLazySingleton(() => AITtsService());
+  locator.registerLazySingleton(() => AISpeechService(
+    locator<LanguageService>(),
+  ));
+  locator.registerLazySingleton(() => AIEmergencyAssistant(
+    locator<AITtsService>(),
+    locator<LanguageService>(),
+  ));
   locator.registerLazySingleton(() => ContactsService());
   locator.registerLazySingleton(() => MedicalProfileService());
   locator.registerLazySingleton(() => SOSHistoryService());
-
-  // ViewModels get the SAME instances
-  locator.registerFactory<EmergencyModeViewModel>(() => EmergencyModeViewModel());
+  locator.registerLazySingleton(() => LanguageService());
+  locator.registerLazySingleton(() => LanguageProvider());
 }
