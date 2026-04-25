@@ -1,11 +1,3 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
-// **************************************************************************
-// StackedLocatorGenerator
-// **************************************************************************
-
-// ignore_for_file: public_member_api_docs, implementation_imports, depend_on_referenced_packages
-
 import 'package:stacked_services/src/navigation/navigation_service.dart';
 import 'package:stacked_shared/stacked_shared.dart';
 
@@ -20,6 +12,7 @@ import '../services/speech_recognition_service.dart';
 import '../services/text_to_speech_service.dart';
 import '../utils/app_language_provider.dart';
 
+
 final locator = StackedLocator.instance;
 
 Future<void> setupLocator({
@@ -31,20 +24,22 @@ Future<void> setupLocator({
       environment: environment, environmentFilter: environmentFilter);
 
 // Register dependencies
+
+  locator.registerLazySingleton(() => LanguageService());
+  locator.registerLazySingleton(() => LanguageProvider());
   locator.registerLazySingleton(() => NavigationService());
   locator.registerLazySingleton(() => SpeechRecognitionService());
   locator.registerLazySingleton(() => TextToSpeechService());
-  locator.registerLazySingleton(() => AITtsService());
+  locator.registerLazySingleton(() => AITtsService(locator<LanguageService>()));
   locator.registerLazySingleton(() => AISpeechService(
     locator<LanguageService>(),
   ));
   locator.registerLazySingleton(() => AIEmergencyAssistant(
     locator<AITtsService>(),
     locator<LanguageService>(),
+    locator<MedicalProfileService>(),
   ));
   locator.registerLazySingleton(() => ContactsService());
   locator.registerLazySingleton(() => MedicalProfileService());
   locator.registerLazySingleton(() => SOSHistoryService());
-  locator.registerLazySingleton(() => LanguageService());
-  locator.registerLazySingleton(() => LanguageProvider());
 }

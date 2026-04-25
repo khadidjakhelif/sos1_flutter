@@ -124,5 +124,6 @@ extension BloodTypeExtension on BloodType {
     }
   }
 
+
   bool get isUniversalDonor => this == BloodType.oNegative;
 }

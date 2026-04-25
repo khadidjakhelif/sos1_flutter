@@ -33,6 +33,16 @@ class AITtsService with ListenableServiceMixin {
   AITtsService([this._languageService]);
 
   Future<void> initialize() async {
+
+    if (_languageService == null) {
+      // Try to get from locator if not passed
+      _languageService = locator<LanguageService>();
+    }
+
+    _languageService?.addListener(() {
+      _setupTtsLanguage();
+    });
+
     await _setupTtsLanguage();
 
     _languageService?.addListener(() {
@@ -66,6 +76,10 @@ class AITtsService with ListenableServiceMixin {
   }
 
   Future<void> _setupTtsLanguage() async {
+    if (_languageService == null) {
+      _languageService = locator<LanguageService>();
+    }
+
     final langCode = _languageService?.getLanguageCode() ?? 'fr';
 
     print('🔍 _languageService is null: ${_languageService == null}');
@@ -96,6 +110,11 @@ class AITtsService with ListenableServiceMixin {
 
   Future<void> speak(String text, {bool urgent = false}) async {
     if (text.isEmpty) return;
+
+    // Force refresh language before each speak
+    if (_languageService != null) {
+      await _setupTtsLanguage();
+    }
 
     // Stop anything currently playing before changing language
     await _flutterTts.stop();

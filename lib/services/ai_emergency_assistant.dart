@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:stacked/stacked.dart';
+import '../models/medical_profile.dart';
 import '../utils/app_config.dart';
 import '../services/ai_provider_service.dart';
 import 'ai_tts_service.dart';
 import 'language_service.dart';
+import 'medical_profile_service.dart';
 
 /// AI Emergency Assistant Service
 /// Provides conversational AI guidance during emergencies
@@ -29,8 +31,9 @@ class AIEmergencyAssistant with ListenableServiceMixin {
   EmergencyProtocol? _activeProtocol;
   Timer? _stepTimer;
   final AITtsService _ttsService;
+  final MedicalProfileService? _medicalProfileService;
 
-  AIEmergencyAssistant(this._ttsService, [this._languageService]) {
+  AIEmergencyAssistant(this._ttsService, [this._languageService, this._medicalProfileService]) {
     _initializeAI();
   }
 
@@ -50,29 +53,75 @@ class AIEmergencyAssistant with ListenableServiceMixin {
     _aiProvider.resetSession(systemPrompt: _buildSystemPrompt());
   }
 
-  // CHANGED: was hardcoded French — now picks language from LanguageService
+  String _buildProfileContext() {
+    final profile = _medicalProfileService?.profile;
+    if (profile == null) return '';
+
+    final parts = <String>[];
+
+    if (profile.fullName.isNotEmpty) {
+      parts.add('Patient name: ${profile.fullName}');
+    }
+
+    parts.add('Blood type: ${profile.bloodType.fullDisplayName}');
+
+    if (profile.isUniversalDonor) {
+      parts.add('Universal donor: yes (O-)');
+    }
+
+    if (profile.chronicDiseases.isNotEmpty) {
+      parts.add('Chronic diseases: ${profile.chronicDiseases.join(', ')}');
+    }
+
+    if (profile.allergies.isNotEmpty) {
+      parts.add('⚠️ ALLERGIES (critical): ${profile.allergies.join(', ')}');
+    }
+
+    if (profile.emergencyNotes.isNotEmpty) {
+      parts.add('Emergency notes: ${profile.emergencyNotes}');
+    }
+
+    if (profile.iceContact != null) {
+      parts.add('ICE contact: ${profile.iceContact!.name} (${profile.iceContact!.relation}) — ${profile.iceContact!.phoneNumber}');
+    }
+
+    if (parts.isEmpty) return '';
+
+    return '''
+
+--- PATIENT MEDICAL PROFILE ---
+${parts.join('\n')}
+--- END OF PROFILE ---
+''';
+  }
+
+  // picks language from LanguageService --STILL NEEDS UPDATE--
   String _buildSystemPrompt() {
     final langCode = _languageService?.getLanguageCode() ?? 'fr';
-    return {
+    final basePrompt = {
       'fr': '''
-Tu es un assistant d'urgence médicale professionnel pour SOS Algérie. 
+Tu es un assistant d'urgence médicale professionnel pour SOS Algérie.
 Tu dois:
 1. Fournir des instructions claires et concises
 2. Rester calme et rassurant
 3. Poser des questions pour évaluer la situation
 4. Guider étape par étape
 5. Prioriser la sécurité de la victime
+6. TOUJOURS tenir compte du profil médical du patient si disponible
+7. AVERTIR immédiatement si une instruction pourrait être dangereuse vu les allergies ou maladies
 
 Réponds en français, de manière concise (1-2 phrases max par message).
 ''',
       'ar': '''
 أنت مساعد طوارئ طبية محترف لـ SOS الجزائر.
 يجب عليك:
-1. تقديم تعليمات واضحة وموجزة بالعربية
+1. تقديم تعليمات واضحة وموجزة
 2. البقاء هادئاً ومطمئناً
 3. طرح أسئلة لتقييم الوضع
 4. التوجيه خطوة بخطوة
 5. إعطاء الأولوية لسلامة الضحية
+6. مراعاة الملف الطبي للمريض دائماً إن توفر
+7. التحذير فوراً إذا كانت التعليمات خطيرة بسبب الحساسية أو الأمراض
 
 أجب بالعربية، جملتين كحد أقصى.
 ''',
@@ -84,10 +133,15 @@ You must:
 3. Ask questions to assess the situation
 4. Guide step by step
 5. Prioritize the victim's safety
+6. ALWAYS consider the patient's medical profile if available
+7. IMMEDIATELY warn if an instruction could be dangerous given allergies or conditions
 
-Respond in English, concisely (1-2 sentences max per message).
+Respond in English, 1-2 sentences max per message.
 ''',
-    }[langCode] ?? 'You are a professional emergency assistant. Be concise.';
+    }[langCode] ?? 'You are a professional emergency assistant.';
+
+    // Append profile
+    return basePrompt + _buildProfileContext();
   }
 
   /// Start a new emergency session
