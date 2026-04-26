@@ -145,19 +145,6 @@ class VoiceAssistantViewModel extends BaseViewModel {
       emergencyType: emergencyType,
     );
   }
-
-  // Fake emergency for testing
-  Future<void> testFireEmergency() async {
-    print('🧪 Manual fire test');
-    final fakeIntent = EmergencyIntent(
-      type: 'fire',
-      confidence: 0.9,
-      rawText: "Help there's a fire in",
-      severity: 8,
-      needsImmediateResponse: true,
-    );
-    _onEmergencyDetected(fakeIntent);
-  }
   
   // Quick command handlers - now navigate directly to emergency mode
   Future<void> onSamuPressed() async {

@@ -49,12 +49,6 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
                         onTap: viewModel.toggleListening,
                       ),
 
-                      SizedBox(height: 60.h),
-
-                      ElevatedButton(
-                        onPressed: viewModel.testFireEmergency,
-                        child: Text('Test Fire'),
-                      ),
 
                       SizedBox(height: 60.h),
 
