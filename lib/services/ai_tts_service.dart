@@ -199,7 +199,6 @@ class AITtsService with ListenableServiceMixin {
     }
   }
 
-  /// UNCHANGED
   String _buildEmergencyPrompt({
     required String emergencyType,
     required String userMessage,
@@ -218,19 +217,39 @@ class AITtsService with ListenableServiceMixin {
       'en': 'Respond in English (2-3 sentences max)',
     }[languageCode] ?? 'Réponds en français (2-3 phrases max)';
 
+    final instructions = {
+      'fr': '1. Confirme la compréhension\n2. Instruction IMMÉDIATE simple\n3. Rassure l\'utilisateur\n\nRéponds UNIQUEMENT avec le message à dire.',
+      'ar': '1. أكّد الفهم\n2. تعليمة فورية وبسيطة\n3. طمئن المستخدم\n\nأجب فقط بالرسالة التي ستقولها.',
+      'en': '1. Confirm understanding\n2. One IMMEDIATE simple instruction\n3. Reassure the user\n\nReply ONLY with the message to say.',
+    }[languageCode] ?? '1. Confirme la compréhension\n2. Instruction IMMÉDIATE\n3. Rassure l\'utilisateur';
+
+    final locationLine = location != null ? {
+      'fr': 'Localisation: $location',
+      'ar': 'الموقع: $location',
+      'en': 'Location: $location',
+    }[languageCode] ?? 'Location: $location' : '';
+
+    final emergencyLabel = {
+      'fr': 'Urgence',
+      'ar': 'طوارئ',
+      'en': 'Emergency',
+    }[languageCode] ?? 'Emergency';
+
+    final messageLabel = {
+      'fr': 'Message',
+      'ar': 'الرسالة',
+      'en': 'Message',
+    }[languageCode] ?? 'Message';
+
     return '''
 $langPrefix
 $langInstruction
 
-Urgence: $emergencyType
-Message: "$userMessage"
-${location != null ? 'Localisation: $location' : ''}
+$emergencyLabel: $emergencyType
+$messageLabel: "$userMessage"
+$locationLine
 
-1. Confirme la compréhension
-2. Instruction IMMÉDIATE simple  
-3. Rassure l\'utilisateur
-
-Réponds UNIQUEMENT avec le message à dire.
+$instructions
 ''';
   }
 

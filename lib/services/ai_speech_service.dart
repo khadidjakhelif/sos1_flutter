@@ -182,22 +182,48 @@ class AISpeechService with ListenableServiceMixin {
   /// Quick emergency detection for immediate response
   void _detectEmergencyQuick(String text) {
     final lowerText = text.toLowerCase();
-    
-    // Fast keyword matching
+
     final keywords = {
-      'cardiac': ['coeur', 'cardiaque', 'poitrine', 'douleur thoracique', 'infarctus'],
-      'bleeding': ['saigne', 'saignement', 'hémorragie', 'sang', 'coupé'],
-      'choking': ['étouffe', 'étouffement', 'ne peut pas respirer', 'gorge'],
-      'unconscious': ['inconscient', 'évanoui', 'ne répond pas', 'coma'],
-      'breathing': ['respire pas', 'difficulté à respirer', 'essoufflement'],
-      'fire': ['feu', 'incendie', 'brûle', 'flamme'],
-      'police': ['police', 'vol', 'agression', 'cambriolage', 'danger'],
-      'medical': [
-        'accident', 'crash', 'injured', 'hurt', 'dangerous',
-        'urgence', 'blessé', 'douleur', 'ambulance'
+      'cardiac': [
+        // fr
+        'coeur', 'cardiaque', 'poitrine', 'douleur thoracique', 'infarctus',
+        // ar
+        'قلب', 'صدر', 'نوبة قلبية',
+        // en
+        'heart', 'chest pain', 'cardiac', 'heart attack',
+      ],
+      'bleeding': [
+        'saigne', 'saignement', 'hémorragie', 'sang', 'coupé',
+        'نزيف', 'دم', 'جرح',
+        'bleeding', 'blood', 'cut', 'hemorrhage',
+      ],
+      'choking': [
+        'étouffe', 'étouffement', 'ne peut pas respirer', 'gorge',
+        'اختناق', 'يختنق', 'لا يتنفس',
+        'choking', 'choke', 'cannot breathe', 'throat',
+      ],
+      'unconscious': [
+        'inconscient', 'évanoui', 'ne répond pas', 'coma',
+        'فاقد الوعي', 'مغمى', 'لا يستجيب',
+        'unconscious', 'fainted', 'not responding', 'passed out',
+      ],
+      'breathing': [
+        'respire pas', 'difficulté à respirer', 'essoufflement',
+        'صعوبة التنفس', 'لا يتنفس',
+        'not breathing', 'breathing difficulty', 'shortness of breath',
+      ],
+      'fire': [
+        'feu', 'incendie', 'brûle', 'flamme',
+        'حريق', 'نار', 'يحترق',
+        'fire', 'burning', 'flames', 'smoke',
+      ],
+      'police': [
+        'police', 'vol', 'agression', 'cambriolage', 'danger',
+        'سرقة', 'اعتداء', 'خطر',
+        'robbery', 'assault', 'theft', 'danger', 'attack',
       ],
     };
-    
+
     for (final entry in keywords.entries) {
       for (final keyword in entry.value) {
         if (lowerText.contains(keyword)) {
@@ -297,7 +323,7 @@ Réponds UNIQUEMENT en JSON:
       }
 
       return EmergencyIntent(
-        type: type ?? 'medical',  // default to 'medical' instead of 'unknown'
+        type: type ?? 'medical',
         confidence: confidence,
         rawText: originalText,
         severity: severity,
@@ -369,18 +395,44 @@ class EmergencyIntent {
   bool get isMediumConfidence => confidence >= 0.4 && confidence < 0.7;
   bool get isLowConfidence => confidence < 0.4;
 
-  String get displayType {
+  String getDisplayType(String langCode) {
     final types = {
-      'cardiac': 'Urgence Cardiaque',
-      'bleeding': 'Saignement',
-      'choking': 'Étouffement',
-      'unconscious': 'Inconscience',
-      'breathing': 'Difficulté Respiratoire',
-      'fire': 'Incendie',
-      'police': 'Urgence Police',
-      'medical': 'Urgence Médicale',
-      'other': 'Autre Urgence',
+      'fr': {
+        'cardiac': 'Urgence Cardiaque',
+        'bleeding': 'Saignement',
+        'choking': 'Étouffement',
+        'unconscious': 'Inconscience',
+        'breathing': 'Difficulté Respiratoire',
+        'fire': 'Incendie',
+        'police': 'Urgence Police',
+        'medical': 'Urgence Médicale',
+        'other': 'Autre Urgence',
+      },
+      'ar': {
+        'cardiac': 'توقف القلب',
+        'bleeding': 'نزيف',
+        'choking': 'اختناق',
+        'unconscious': 'فقدان الوعي',
+        'breathing': 'صعوبة في التنفس',
+        'fire': 'حريق',
+        'police': 'طوارئ أمنية',
+        'medical': 'طوارئ طبية',
+        'other': 'طوارئ أخرى',
+      },
+      'en': {
+        'cardiac': 'Cardiac Emergency',
+        'bleeding': 'Bleeding',
+        'choking': 'Choking',
+        'unconscious': 'Unconsciousness',
+        'breathing': 'Breathing Difficulty',
+        'fire': 'Fire',
+        'police': 'Police Emergency',
+        'medical': 'Medical Emergency',
+        'other': 'Other Emergency',
+      },
     };
-    return types[type.toLowerCase()] ?? 'Urgence';
+    return types[langCode]?[type.toLowerCase()]
+        ?? types['fr']![type.toLowerCase()]
+        ?? 'Urgence';
   }
 }

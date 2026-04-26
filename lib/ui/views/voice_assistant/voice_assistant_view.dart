@@ -380,7 +380,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
             ),
             SizedBox(height: 16.h),
             Text(
-              _getEmergencyDisplayName(emergencyType),
+              _getEmergencyDisplayName(emergencyType, viewModel.languageCode),
               style: TextStyle(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.w700,
@@ -472,17 +472,39 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
     return icons[type.toLowerCase()] ?? Icons.emergency;
   }
 
-  String _getEmergencyDisplayName(String type) {
+  String _getEmergencyDisplayName(String type, String langCode) {
     final names = {
-      'cardiac': 'Urgence Cardiaque',
-      'medical': 'Urgence Médicale',
-      'bleeding': 'Saignement',
-      'choking': 'Étouffement',
-      'fire': 'Incendie',
-      'police': 'Urgence Police',
-      'unconscious': 'Inconscience',
+      'fr': {
+        'cardiac': 'Urgence Cardiaque',
+        'medical': 'Urgence Médicale',
+        'bleeding': 'Saignement',
+        'choking': 'Étouffement',
+        'fire': 'Incendie',
+        'police': 'Urgence Police',
+        'unconscious': 'Inconscience',
+      },
+      'ar': {
+        'cardiac': 'توقف القلب',
+        'medical': 'طوارئ طبية',
+        'bleeding': 'نزيف',
+        'choking': 'اختناق',
+        'fire': 'حريق',
+        'police': 'طوارئ أمنية',
+        'unconscious': 'فقدان الوعي',
+      },
+      'en': {
+        'cardiac': 'Cardiac Emergency',
+        'medical': 'Medical Emergency',
+        'bleeding': 'Bleeding',
+        'choking': 'Choking',
+        'fire': 'Fire',
+        'police': 'Police Emergency',
+        'unconscious': 'Unconsciousness',
+      },
     };
-    return names[type.toLowerCase()] ?? 'Urgence Détectée';
+    return names[langCode]?[type.toLowerCase()]
+        ?? names['fr']![type.toLowerCase()]
+        ?? 'Emergency';
   }
 
   String _getEmergencyNumber(String type) {
