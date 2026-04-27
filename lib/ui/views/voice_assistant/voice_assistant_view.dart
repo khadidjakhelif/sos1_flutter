@@ -5,9 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'voice_assistant_viewmodel.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_strings.dart';
-import '../../widgets/mic_button.dart';
-import '../../widgets/quick_command_button.dart';
-import '../../widgets/example_command_text.dart';
+import '../../widgets/sos_orb.dart';
 
 class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
   const VoiceAssistantView({super.key});
@@ -23,94 +21,52 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Minimal Header
             _buildHeader(viewModel),
-            
-            // Main Content
+
+            // Main Content — the orb
             Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    SizedBox(height: 40.h),
-                    
-                    // Title Section
-                    _buildTitleSection(),
-                    
-                    SizedBox(height: 50.h),
-                    
-                    // Microphone Button
-                    MicButton(
-                      isListening: viewModel.isListening,
-                      onTap: viewModel.toggleListening,
-                    ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Show recognized text above orb when there's speech
+                  if (viewModel.userCommand.isNotEmpty)
+                    _buildRecognizedText(viewModel.userCommand),
 
-                    SizedBox(height: 60.h),
+                  // The 3D Orb
+                  SosOrb(
+                    isListening: viewModel.isListening,
+                    isProcessing: viewModel.isProcessing,
+                    onTap: viewModel.toggleListening,
+                  ),
 
-                    ElevatedButton(
-                      onPressed: viewModel.testFireEmergency,
-                      child: Text('Test Fire'),
-                    ),
-
-                    SizedBox(height: 60.h),
-                    
-                    // Example Command or Recognized Text
-                    if (viewModel.userCommand.isEmpty)
-                      const ExampleCommandText()
-                    else
-                      _buildRecognizedText(viewModel.userCommand),
-                    
-                    SizedBox(height: 30.h),
-                    
-                    // AI Processing Indicator
-                    if (viewModel.isProcessing)
-                      _buildAIProcessingIndicator(),
-                    
-                    // Emergency Response Card
-                    if (viewModel.showEmergencyResponse && viewModel.detectedEmergencyType.isNotEmpty)
-                      _buildEmergencyResponse(viewModel),
-                    
-                    SizedBox(height: 40.h),
-                  ],
-                ),
+                  // Emergency Response Card
+                  if (viewModel.showEmergencyResponse &&
+                      viewModel.detectedEmergencyType.isNotEmpty)
+                    _buildEmergencyResponse(viewModel),
+                ],
               ),
             ),
-            
-            // Quick Commands Section
-            _buildQuickCommandsSection(viewModel),
+
+            // Quick Commands at bottom
+            _buildQuickCommands(viewModel),
           ],
         ),
       ),
     );
   }
 
+  // ─────────────────────────────────────────
+  // HEADER — minimal, no back button
+  // ─────────────────────────────────────────
   Widget _buildHeader(VoiceAssistantViewModel viewModel) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
       child: Row(
         children: [
-          // Back Button
-          GestureDetector(
-            onTap: viewModel.goBack,
-            child: Container(
-              width: 44.w,
-              height: 44.w,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
-                size: 20.sp,
-              ),
-            ),
-          ),
-          
-          const Spacer(),
-          
-          // App Title
+          // App branding
           Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'SOS ALGÉRIE',
@@ -121,63 +77,54 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
                   letterSpacing: 2,
                 ),
               ),
+              SizedBox(height: 2.h),
               Text(
                 AppStrings.appSubtitle,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w400,
                   color: AppColors.textMuted,
+                  letterSpacing: 1,
                 ),
               ),
             ],
           ),
-          
+
           const Spacer(),
 
-          // LANGUAGE INDICATOR
+          // Language indicator
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(20.r),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.language,
-                  color: Colors.white,
-                  size: 14.sp,
-                ),
-                SizedBox(width: 4.w),
-                Text(
-                  viewModel.languageCode.toUpperCase(),  // Shows "FR", "AR", "EN"
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+            child: Text(
+              viewModel.languageCode.toUpperCase(),
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
 
-          SizedBox(width: 8.w), // Spacer
+          SizedBox(width: 10.w),
 
-          // Settings Button
+          // Settings
           GestureDetector(
             onTap: viewModel.navigateToSettings,
             child: Container(
-              width: 44.w,
-              height: 44.w,
+              width: 40.w,
+              height: 40.w,
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12.r),
               ),
               child: Icon(
-                Icons.settings,
-                color: Colors.white,
-                size: 22.sp,
+                Icons.settings_outlined,
+                color: AppColors.textMuted,
+                size: 20.sp,
               ),
             ),
           ),
@@ -186,146 +133,40 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
     );
   }
 
-  Widget _buildTitleSection() {
-    return Column(
-      children: [
-        // Main Question
-        Text(
-          AppStrings.howCanIHelp,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 28.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-            height: 1.3,
-          ),
-        ),
-        
-        SizedBox(height: 12.h),
-        
-        // Subtitle
-        Text(
-          AppStrings.voiceAssistantActive,
-          style: TextStyle(
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textMuted,
-            letterSpacing: 3,
-          ),
-        ),
-      ],
-    );
-  }
-
+  // ─────────────────────────────────────────
+  // RECOGNIZED TEXT — shown above orb
+  // ─────────────────────────────────────────
   Widget _buildRecognizedText(String text) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 30.w),
-      padding: EdgeInsets.all(20.w),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: AppColors.primaryRed.withOpacity(0.3),
-          width: 1,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 40.w),
+      child: Text(
+        '"$text"',
+        textAlign: TextAlign.center,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 16.sp,
+          fontWeight: FontWeight.w400,
+          color: AppColors.textSecondary,
+          fontStyle: FontStyle.italic,
+          height: 1.5,
         ),
       ),
-      child: Column(
-        children: [
-          Text(
-            '"$text"',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-              height: 1.5,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          SizedBox(height: 12.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 6.w,
-                height: 6.w,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryRed,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              SizedBox(width: 4.w),
-              Container(
-                width: 6.w,
-                height: 6.w,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryRed,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              SizedBox(width: 4.w),
-              Container(
-                width: 6.w,
-                height: 6.w,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryRed,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ).animate()
-      .fadeIn(duration: 300.ms)
-      .slideY(begin: 0.2, end: 0);
+    )
+        .animate()
+        .fadeIn(duration: 300.ms)
+        .slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildAIProcessingIndicator() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 30.w),
-      padding: EdgeInsets.all(20.w),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: AppColors.primaryRed.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 20.w,
-            height: 20.w,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryRed),
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Text(
-            'Analyse IA en cours...',
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    ).animate()
-      .fadeIn(duration: 300.ms);
-  }
-
+  // ─────────────────────────────────────────
+  // EMERGENCY RESPONSE — card below orb
+  // ─────────────────────────────────────────
   Widget _buildEmergencyResponse(VoiceAssistantViewModel viewModel) {
     final emergencyType = viewModel.detectedEmergencyType;
-    final confidence = viewModel.confidenceScore;
-    
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 30.w),
-      padding: EdgeInsets.all(24.w),
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: AppColors.redGradient,
@@ -335,130 +176,178 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryRed.withOpacity(0.4),
-            blurRadius: 20,
+            color: AppColors.primaryRed.withOpacity(0.35),
+            blurRadius: 24,
             spreadRadius: 2,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // AI Badge
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.psychology,
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+                child: Icon(
+                  _getEmergencyIcon(emergencyType),
                   color: Colors.white,
-                  size: 14.sp,
+                  size: 22.sp,
                 ),
-                SizedBox(width: 6.w),
-                Text(
-                  'IA Détectée',
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          SizedBox(height: 16.h),
-          
-          Icon(
-            _getEmergencyIconByType(emergencyType),
-            color: Colors.white,
-            size: 48.sp,
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            _getEmergencyDisplayName(emergencyType),
-            style: TextStyle(
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          
-          // Confidence Score
-          Text(
-            'Confiance: ${(confidence * 100).toInt()}%',
-            style: TextStyle(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w500,
-              color: Colors.white.withOpacity(0.7),
-            ),
-          ),
-          
-          SizedBox(height: 8.h),
-          Text(
-            'Lancement du mode urgence...',
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w400,
-              color: Colors.white.withOpacity(0.8),
-            ),
-          ),
-          SizedBox(height: 16.h),
-          
-          // Emergency Number
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Text(
-              _getEmergencyNumber(emergencyType),
-              style: TextStyle(
-                fontSize: 28.sp,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: 2,
               ),
-            ),
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getEmergencyDisplayName(emergencyType),
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      'Lancement du mode urgence...',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          
           SizedBox(height: 16.h),
-          
-          // Manual Launch Button
+          // Manual Launch
           GestureDetector(
             onTap: () => viewModel.startEmergencyMode(emergencyType),
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(vertical: 12.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12.r),
               ),
-              child: Text(
-                'LANCER MAINTENANT',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryRed,
+              child: Center(
+                child: Text(
+                  'LANCER MAINTENANT',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryRed,
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
             ),
           ),
         ],
       ),
-    ).animate()
-      .fadeIn(duration: 400.ms)
-      .scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1))
-      .then()
-      .shimmer(duration: 1000.ms, color: Colors.white.withOpacity(0.2));
+    )
+        .animate()
+        .fadeIn(duration: 400.ms)
+        .slideY(begin: 0.2, end: 0)
+        .then()
+        .shimmer(duration: 1200.ms, color: Colors.white.withOpacity(0.15));
   }
 
-  IconData _getEmergencyIconByType(String type) {
+  // ─────────────────────────────────────────
+  // QUICK COMMANDS — bottom bar
+  // ─────────────────────────────────────────
+  Widget _buildQuickCommands(VoiceAssistantViewModel viewModel) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withOpacity(0.4),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(28.r),
+          topRight: Radius.circular(28.r),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            AppStrings.quickCommands,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
+              letterSpacing: 2,
+            ),
+          ),
+          SizedBox(height: 16.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildQuickAction(
+                Icons.medical_services_rounded,
+                AppStrings.samu,
+                viewModel.onSamuPressed,
+              ),
+              _buildQuickAction(
+                Icons.shield_rounded,
+                AppStrings.police,
+                viewModel.onPolicePressed,
+              ),
+              _buildQuickAction(
+                Icons.local_fire_department_rounded,
+                AppStrings.pompiers,
+                viewModel.onPompiersPressed,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAction(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 96.w,
+        padding: EdgeInsets.symmetric(vertical: 16.h),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: AppColors.surfaceLight.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: AppColors.primaryRed, size: 26.sp),
+            SizedBox(height: 8.h),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────
+  IconData _getEmergencyIcon(String type) {
     final icons = {
       'cardiac': Icons.favorite,
       'medical': Icons.medical_services,
@@ -484,75 +373,11 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
     return names[type.toLowerCase()] ?? 'Urgence Détectée';
   }
 
-  String _getEmergencyNumber(String type) {
-    final numbers = {
-      'cardiac': '15',
-      'medical': '15',
-      'bleeding': '15',
-      'choking': '15',
-      'fire': '18',
-      'police': '17',
-      'unconscious': '15',
-    };
-    return numbers[type.toLowerCase()] ?? '15';
-  }
-
-  Widget _buildQuickCommandsSection(VoiceAssistantViewModel viewModel) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withOpacity(0.5),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24.r),
-          topRight: Radius.circular(24.r),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Section Title
-          Text(
-            AppStrings.quickCommands,
-            style: TextStyle(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
-              letterSpacing: 2,
-            ),
-          ),
-          
-          SizedBox(height: 20.h),
-          
-          // Quick Command Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              QuickCommandButton(
-                icon: Icons.medical_services,
-                label: AppStrings.samu,
-                onTap: viewModel.onSamuPressed,
-              ),
-              QuickCommandButton(
-                icon: Icons.local_police,
-                label: AppStrings.police,
-                onTap: viewModel.onPolicePressed,
-              ),
-              QuickCommandButton(
-                icon: Icons.local_fire_department,
-                label: AppStrings.pompiers,
-                onTap: viewModel.onPompiersPressed,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   VoiceAssistantViewModel viewModelBuilder(BuildContext context) {
     return VoiceAssistantViewModel();
   }
-  
+
   @override
   void onViewModelReady(VoiceAssistantViewModel viewModel) {
     viewModel.initialize();

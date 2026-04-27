@@ -3,10 +3,12 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/app/app.locator.dart';
 import 'package:sos1/services/contacts_service.dart';
 import 'package:sos1/models/emergency_contact.dart';
+import 'package:sos1/services/emergency_actions_service.dart';
 
 class EmergencyContactsViewModel extends BaseViewModel {
   final _contactsService = locator<ContactsService>();
   final _navigationService = locator<NavigationService>();
+  final _emergencyActions = locator<EmergencyActionsService>();
 
   List<PublicService> get publicServices => _contactsService.publicServices;
   List<EmergencyContact> get personalContacts => _contactsService.personalContacts;
@@ -46,8 +48,11 @@ class EmergencyContactsViewModel extends BaseViewModel {
   }
 
   Future<void> triggerSOS() async {
-    // Trigger emergency SOS
-    print('SOS Triggered!');
+    // Send SMS to all contacts + auto-call first contact
+    await _emergencyActions.triggerFullSOS(
+      emergencyType: 'SOS Général',
+      customMessage: 'Alerte SOS déclenchée manuellement.',
+    );
   }
 
   void goBack() {

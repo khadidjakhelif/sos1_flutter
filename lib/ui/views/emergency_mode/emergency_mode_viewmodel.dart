@@ -8,12 +8,14 @@ import 'package:sos1/services/ai_tts_service.dart';
 import 'package:sos1/services/sos_history_service.dart';
 import 'package:sos1/models/sos_incident.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:sos1/services/emergency_actions_service.dart';
 
 class EmergencyModeViewModel extends BaseViewModel {
   final _aiAssistant = locator<AIEmergencyAssistant>();
   final _aiTts = locator<AITtsService>();
   final _historyService = locator<SOSHistoryService>();
   final _navigationService = locator<NavigationService>();
+  final _emergencyActions = locator<EmergencyActionsService>();
 
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
@@ -170,19 +172,19 @@ class EmergencyModeViewModel extends BaseViewModel {
     await _aiAssistant.repeatStep();
   }
 
-  Future<void> callEmergencyServices() async {
-    // Get emergency number based on type
-    final emergencyNumber = _getEmergencyNumber(_emergencyType);
-    
-    // Speak confirmation
-    await _aiTts.speak(
-      "Appel des secours au $emergencyNumber en cours.",
-      urgent: true,
-    );
-    
-    // Launch phone call
-    // await _launchPhoneCall(emergencyNumber);
-  }
+Future<void> callEmergencyServices() async {
+  // Speak confirmation
+  await _aiTts.speak(
+    "Envoi des alertes SMS et appel des secours en cours.",
+    urgent: true,
+  );
+  
+  // Trigger full SOS: SMS to all contacts + auto-call first contact
+  await _emergencyActions.triggerFullSOS(
+    emergencyType: _emergencyType,
+    customMessage: _emergencyDescription,
+  );
+}
 
   String _getEmergencyNumber(String type) {
     final numbers = {
@@ -199,8 +201,13 @@ class EmergencyModeViewModel extends BaseViewModel {
 
   Future<void> shareLocation() async {
     await _aiTts.speak(
-      "Partage de votre position GPS avec les secours.",
+      "Partage de votre position GPS en cours.",
       urgent: true,
+    );
+
+    await _emergencyActions.sendSOSToAllContacts(
+      emergencyType: _emergencyType,
+      customMessage: 'Partage de position manuel',
     );
   }
 
