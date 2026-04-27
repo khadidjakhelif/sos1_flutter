@@ -52,7 +52,7 @@ class AISpeechService with ListenableServiceMixin {
   }
 
   String _getLocaleFromLanguage(AppLanguage language) {
-    return language.locale;  // ✅ Uses your existing extension!
+    return language.locale;
   }
 
   Future<void> initialize() async {
@@ -87,7 +87,7 @@ class AISpeechService with ListenableServiceMixin {
       print('❌ Gemini initialization error: $e');
     }
 
-    notifyListeners();  // ← NO GEMINI
+    notifyListeners();
   }
 
   Future<void> playStartBeep() async {
@@ -182,18 +182,48 @@ class AISpeechService with ListenableServiceMixin {
   /// Quick emergency detection for immediate response
   void _detectEmergencyQuick(String text) {
     final lowerText = text.toLowerCase();
-    
-    // Fast keyword matching
+
     final keywords = {
-      'cardiac': ['coeur', 'cardiaque', 'poitrine', 'douleur thoracique', 'infarctus'],
-      'bleeding': ['saigne', 'saignement', 'hémorragie', 'sang', 'coupé'],
-      'choking': ['étouffe', 'étouffement', 'ne peut pas respirer', 'gorge'],
-      'unconscious': ['inconscient', 'évanoui', 'ne répond pas', 'coma'],
-      'breathing': ['respire pas', 'difficulté à respirer', 'essoufflement'],
-      'fire': ['feu', 'incendie', 'brûle', 'flamme'],
-      'police': ['police', 'vol', 'agression', 'cambriolage', 'danger'],
+      'cardiac': [
+        // fr
+        'coeur', 'cardiaque', 'poitrine', 'douleur thoracique', 'infarctus',
+        // ar
+        'قلب', 'صدر', 'نوبة قلبية',
+        // en
+        'heart', 'chest pain', 'cardiac', 'heart attack',
+      ],
+      'bleeding': [
+        'saigne', 'saignement', 'hémorragie', 'sang', 'coupé',
+        'نزيف', 'دم', 'جرح',
+        'bleeding', 'blood', 'cut', 'hemorrhage',
+      ],
+      'choking': [
+        'étouffe', 'étouffement', 'ne peut pas respirer', 'gorge',
+        'اختناق', 'يختنق', 'لا يتنفس',
+        'choking', 'choke', 'cannot breathe', 'throat',
+      ],
+      'unconscious': [
+        'inconscient', 'évanoui', 'ne répond pas', 'coma',
+        'فاقد الوعي', 'مغمى', 'لا يستجيب',
+        'unconscious', 'fainted', 'not responding', 'passed out',
+      ],
+      'breathing': [
+        'respire pas', 'difficulté à respirer', 'essoufflement',
+        'صعوبة التنفس', 'لا يتنفس',
+        'not breathing', 'breathing difficulty', 'shortness of breath',
+      ],
+      'fire': [
+        'feu', 'incendie', 'brûle', 'flamme',
+        'حريق', 'نار', 'يحترق',
+        'fire', 'burning', 'flames', 'smoke',
+      ],
+      'police': [
+        'police', 'vol', 'agression', 'cambriolage', 'danger',
+        'سرقة', 'اعتداء', 'خطر',
+        'robbery', 'assault', 'theft', 'danger', 'attack',
+      ],
     };
-    
+
     for (final entry in keywords.entries) {
       for (final keyword in entry.value) {
         if (lowerText.contains(keyword)) {
@@ -268,71 +298,64 @@ Réponds UNIQUEMENT en JSON:
   EmergencyIntent _parseAIResponse(String aiResponse, String originalText) {
     try {
       print('🔍 Parsing AI response...');
-      print('Raw response length: ${aiResponse.length} characters');
 
-      // Extract JSON from response (handle markdown code blocks)
       String jsonStr = aiResponse;
-
       if (aiResponse.contains('```json')) {
-        print('📦 Found JSON markdown block with "```json"');
         jsonStr = aiResponse.split('```json')[1].split('```')[0];
-        print('Extracted JSON: $jsonStr');
       } else if (aiResponse.contains('```')) {
-        print('📦 Found generic markdown block with "```"');
         jsonStr = aiResponse.split('```')[1].split('```')[0];
-        print('Extracted JSON: $jsonStr');
-      } else {
-        print('📄 No markdown blocks found, using raw response');
       }
 
-      // Simple parsing (in production, use proper JSON parsing)
-      final type = _extractValue(jsonStr, '"type"');
-      final severityStr = _extractValue(jsonStr, '"severity"');
-      final severity = int.tryParse(severityStr ?? '') ?? 5;
+      final type = _extractStringValue(jsonStr, '"type"');
+      // FIX 1: use number extractor for severity
+      final severity = _extractNumberValue(jsonStr, '"severity"') ?? 5;
       final needsImmediate = jsonStr.contains('"needsImmediateResponse": true');
 
       print('📊 Extracted values:');
       print('   type: $type');
-      print('   severity string: $severityStr');
-      print('   severity int: $severity');
+      print('   severity: $severity');
       print('   needsImmediate: $needsImmediate');
 
-      final intent = EmergencyIntent(
-        type: type ?? 'unknown',
-        confidence: severity / 10.0,
+      // FIX 2: boost confidence when needsImmediateResponse is true
+      double confidence = severity / 10.0;
+      if (needsImmediate && confidence < 0.7) {
+        confidence = 0.75; // force high confidence if AI says immediate response needed
+      }
+
+      return EmergencyIntent(
+        type: type ?? 'medical',
+        confidence: confidence,
         rawText: originalText,
         severity: severity,
         needsImmediateResponse: needsImmediate,
         isQuickDetection: false,
       );
-
-      print('✅ Successfully created EmergencyIntent');
-      return intent;
-
     } catch (e) {
       print('❌ Parsing error: $e');
-      print('Stack trace: ${StackTrace.current}');
-
       return EmergencyIntent(
-        type: 'unknown',
-        confidence: 0.5,
+        type: 'medical',
+        confidence: 0.75,
         rawText: originalText,
       );
     }
   }
 
-  String? _extractValue(String json, String key) {
-    print('🔎 Extracting key: $key from JSON');
-
+  String? _extractStringValue(String json, String key) {
     final pattern = '$key\\s*:\\s*"([^"]+)"';
     final regex = RegExp(pattern);
     final match = regex.firstMatch(json);
-
-    final value = match?.group(1);
-    print('   Result: $value');
-
-    return value;
+    return match?.group(1);
   }
+
+// extracts bare numeric values like "severity": 8
+  int? _extractNumberValue(String json, String key) {
+    final pattern = '$key\\s*:\\s*(\\d+)';
+    final regex = RegExp(pattern);
+    final match = regex.firstMatch(json);
+    return match != null ? int.tryParse(match.group(1)!) : null;
+  }
+
+  String? _extractValue(String json, String key) => _extractStringValue(json, key);
 
   void clearRecognizedWords() {
     _recognizedWords.value = '';
@@ -372,18 +395,44 @@ class EmergencyIntent {
   bool get isMediumConfidence => confidence >= 0.4 && confidence < 0.7;
   bool get isLowConfidence => confidence < 0.4;
 
-  String get displayType {
+  String getDisplayType(String langCode) {
     final types = {
-      'cardiac': 'Urgence Cardiaque',
-      'bleeding': 'Saignement',
-      'choking': 'Étouffement',
-      'unconscious': 'Inconscience',
-      'breathing': 'Difficulté Respiratoire',
-      'fire': 'Incendie',
-      'police': 'Urgence Police',
-      'medical': 'Urgence Médicale',
-      'other': 'Autre Urgence',
+      'fr': {
+        'cardiac': 'Urgence Cardiaque',
+        'bleeding': 'Saignement',
+        'choking': 'Étouffement',
+        'unconscious': 'Inconscience',
+        'breathing': 'Difficulté Respiratoire',
+        'fire': 'Incendie',
+        'police': 'Urgence Police',
+        'medical': 'Urgence Médicale',
+        'other': 'Autre Urgence',
+      },
+      'ar': {
+        'cardiac': 'توقف القلب',
+        'bleeding': 'نزيف',
+        'choking': 'اختناق',
+        'unconscious': 'فقدان الوعي',
+        'breathing': 'صعوبة في التنفس',
+        'fire': 'حريق',
+        'police': 'طوارئ أمنية',
+        'medical': 'طوارئ طبية',
+        'other': 'طوارئ أخرى',
+      },
+      'en': {
+        'cardiac': 'Cardiac Emergency',
+        'bleeding': 'Bleeding',
+        'choking': 'Choking',
+        'unconscious': 'Unconsciousness',
+        'breathing': 'Breathing Difficulty',
+        'fire': 'Fire',
+        'police': 'Police Emergency',
+        'medical': 'Medical Emergency',
+        'other': 'Other Emergency',
+      },
     };
-    return types[type.toLowerCase()] ?? 'Urgence';
+    return types[langCode]?[type.toLowerCase()]
+        ?? types['fr']![type.toLowerCase()]
+        ?? 'Urgence';
   }
 }

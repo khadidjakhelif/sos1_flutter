@@ -1,3 +1,5 @@
+import 'package:sos1/ui/views/legal/privacy_policy/privacy_screen_view.dart';
+import 'package:sos1/ui/views/legal/terms_of_use/terms_of_use_view.dart';
 import 'package:stacked/stacked_annotations.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/services/speech_recognition_service.dart';
@@ -17,6 +19,7 @@ import 'package:sos1/ui/views/settings/settings_view.dart';
 import 'package:sos1/ui/views/sos_history/sos_history_view.dart';
 import 'package:sos1/ui/views/emergency_mode/emergency_mode_view.dart';
 
+import '../ui/views/edit_medical_profile/edit_medical_profile_view.dart';
 import '../utils/app_language_provider.dart';
 
 @StackedApp(
@@ -28,6 +31,9 @@ import '../utils/app_language_provider.dart';
     MaterialRoute(page: SettingsView),
     MaterialRoute(page: SOSHistoryView),
     MaterialRoute(page: EmergencyModeView),
+    MaterialRoute(page: EditProfileView),
+    MaterialRoute(page: TermsOfUseView),
+    MaterialRoute(page: PrivacyPolicyView),
   ],
   dependencies: [
     LazySingleton(classType: NavigationService),

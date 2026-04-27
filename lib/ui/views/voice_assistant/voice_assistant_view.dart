@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:stacked/stacked.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 import 'voice_assistant_viewmodel.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_strings.dart';
+import '../../../utils/app_language_provider.dart';
 import '../../widgets/sos_orb.dart';
 
 class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
@@ -16,50 +18,54 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
     VoiceAssistantViewModel viewModel,
     Widget? child,
   ) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Minimal Header
-            _buildHeader(viewModel),
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Minimal Header
+                _buildHeader(viewModel, languageProvider),
 
-            // Main Content — the orb
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Show recognized text above orb when there's speech
-                  if (viewModel.userCommand.isNotEmpty)
-                    _buildRecognizedText(viewModel.userCommand),
+                // Main Content — the orb
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Show recognized text above orb when there's speech
+                      if (viewModel.userCommand.isNotEmpty)
+                        _buildRecognizedText(viewModel.userCommand),
 
-                  // The 3D Orb
-                  SosOrb(
-                    isListening: viewModel.isListening,
-                    isProcessing: viewModel.isProcessing,
-                    onTap: viewModel.toggleListening,
+                      // The 3D Orb
+                      SosOrb(
+                        isListening: viewModel.isListening,
+                        isProcessing: viewModel.isProcessing,
+                        onTap: viewModel.toggleListening,
+                      ),
+
+                      // Emergency Response Card
+                      if (viewModel.showEmergencyResponse &&
+                          viewModel.detectedEmergencyType.isNotEmpty)
+                        _buildEmergencyResponse(viewModel, languageProvider),
+                    ],
                   ),
+                ),
 
-                  // Emergency Response Card
-                  if (viewModel.showEmergencyResponse &&
-                      viewModel.detectedEmergencyType.isNotEmpty)
-                    _buildEmergencyResponse(viewModel),
-                ],
-              ),
+                // Quick Commands at bottom
+                _buildQuickCommands(viewModel, languageProvider),
+              ],
             ),
-
-            // Quick Commands at bottom
-            _buildQuickCommands(viewModel),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   // ─────────────────────────────────────────
   // HEADER — minimal, no back button
   // ─────────────────────────────────────────
-  Widget _buildHeader(VoiceAssistantViewModel viewModel) {
+  Widget _buildHeader(VoiceAssistantViewModel viewModel, LanguageProvider languageProvider) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
       child: Row(
@@ -69,7 +75,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'SOS ALGÉRIE',
+                languageProvider.translate('app_name'),
                 style: TextStyle(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.w800,
@@ -79,7 +85,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
               ),
               SizedBox(height: 2.h),
               Text(
-                AppStrings.appSubtitle,
+                languageProvider.translate('app_subtitle'),
                 style: TextStyle(
                   fontSize: 11.sp,
                   fontWeight: FontWeight.w400,
@@ -161,7 +167,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
   // ─────────────────────────────────────────
   // EMERGENCY RESPONSE — card below orb
   // ─────────────────────────────────────────
-  Widget _buildEmergencyResponse(VoiceAssistantViewModel viewModel) {
+  Widget _buildEmergencyResponse(VoiceAssistantViewModel viewModel, LanguageProvider languageProvider) {
     final emergencyType = viewModel.detectedEmergencyType;
 
     return Container(
@@ -206,7 +212,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _getEmergencyDisplayName(emergencyType),
+                      _getEmergencyDisplayName(emergencyType, viewModel.languageCode),
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
@@ -215,7 +221,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
                     ),
                     SizedBox(height: 2.h),
                     Text(
-                      'Lancement du mode urgence...',
+                      languageProvider.translate('emergency_mode_activated'),
                       style: TextStyle(
                         fontSize: 12.sp,
                         color: Colors.white.withOpacity(0.7),
@@ -234,7 +240,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
               width: double.infinity,
               padding: EdgeInsets.symmetric(vertical: 12.h),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12.r),
               ),
               child: Center(
@@ -263,7 +269,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
   // ─────────────────────────────────────────
   // QUICK COMMANDS — bottom bar
   // ─────────────────────────────────────────
-  Widget _buildQuickCommands(VoiceAssistantViewModel viewModel) {
+  Widget _buildQuickCommands(VoiceAssistantViewModel viewModel, LanguageProvider languageProvider) {
     return Container(
       padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
       decoration: BoxDecoration(
@@ -277,7 +283,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            AppStrings.quickCommands,
+            languageProvider.translate('rapid_calls'),
             style: TextStyle(
               fontSize: 10.sp,
               fontWeight: FontWeight.w600,
@@ -291,17 +297,17 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
             children: [
               _buildQuickAction(
                 Icons.medical_services_rounded,
-                AppStrings.samu,
+                languageProvider.translate('samu'),
                 viewModel.onSamuPressed,
               ),
               _buildQuickAction(
                 Icons.shield_rounded,
-                AppStrings.police,
+                languageProvider.translate('police'),
                 viewModel.onPolicePressed,
               ),
               _buildQuickAction(
                 Icons.local_fire_department_rounded,
-                AppStrings.pompiers,
+                languageProvider.translate('fire_department'),
                 viewModel.onPompiersPressed,
               ),
             ],
@@ -360,17 +366,39 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
     return icons[type.toLowerCase()] ?? Icons.emergency;
   }
 
-  String _getEmergencyDisplayName(String type) {
+  String _getEmergencyDisplayName(String type, String langCode) {
     final names = {
-      'cardiac': 'Urgence Cardiaque',
-      'medical': 'Urgence Médicale',
-      'bleeding': 'Saignement',
-      'choking': 'Étouffement',
-      'fire': 'Incendie',
-      'police': 'Urgence Police',
-      'unconscious': 'Inconscience',
+      'fr': {
+        'cardiac': 'Urgence Cardiaque',
+        'medical': 'Urgence Médicale',
+        'bleeding': 'Saignement',
+        'choking': 'Étouffement',
+        'fire': 'Incendie',
+        'police': 'Urgence Police',
+        'unconscious': 'Inconscience',
+      },
+      'ar': {
+        'cardiac': 'توقف القلب',
+        'medical': 'طوارئ طبية',
+        'bleeding': 'نزيف',
+        'choking': 'اختناق',
+        'fire': 'حريق',
+        'police': 'طوارئ أمنية',
+        'unconscious': 'فقدان الوعي',
+      },
+      'en': {
+        'cardiac': 'Cardiac Emergency',
+        'medical': 'Medical Emergency',
+        'bleeding': 'Bleeding',
+        'choking': 'Choking',
+        'fire': 'Fire',
+        'police': 'Police Emergency',
+        'unconscious': 'Unconsciousness',
+      },
     };
-    return names[type.toLowerCase()] ?? 'Urgence Détectée';
+    return names[langCode]?[type.toLowerCase()]
+        ?? names['fr']![type.toLowerCase()]
+        ?? 'Emergency';
   }
 
   @override

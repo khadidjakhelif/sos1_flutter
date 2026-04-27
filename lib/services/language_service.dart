@@ -15,7 +15,7 @@ class LanguageService with ListenableServiceMixin {
 
   LanguageService() {
     listenToReactiveValues([_currentLanguage]);
-    _initializeLanguage();
+    //_initializeLanguage();
   }
 
   /// Initialize language from saved preferences
@@ -23,6 +23,7 @@ class LanguageService with ListenableServiceMixin {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedLanguageCode = prefs.getString(_languageKey);
+      print('💾 Saved language code: $savedLanguageCode');
 
       if (savedLanguageCode != null) {
         // Convert saved code to AppLanguage

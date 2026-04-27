@@ -34,8 +34,8 @@ class _QuickCommandButtonState extends State<QuickCommandButton> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeInOut,
-        width: 100.w,
-        padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 12.w),
+        width: 80.w,
+        padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
         decoration: BoxDecoration(
           color: _isPressed 
             ? AppColors.surfaceLight 
@@ -74,7 +74,7 @@ class _QuickCommandButtonState extends State<QuickCommandButton> {
               child: Icon(
                 widget.icon,
                 color: AppColors.primaryRed,
-                size: 28.sp,
+                size: 18.sp,
               ),
             ),
             
@@ -84,7 +84,7 @@ class _QuickCommandButtonState extends State<QuickCommandButton> {
             Text(
               widget.label,
               style: TextStyle(
-                fontSize: 13.sp,
+                fontSize: 11.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),

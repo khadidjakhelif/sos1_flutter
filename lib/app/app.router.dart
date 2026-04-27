@@ -8,16 +8,19 @@
 import 'package:flutter/material.dart' as _i9;
 import 'package:flutter/material.dart';
 import 'package:sos1/ui/views/emergency_contacts/emergency_contacts_view.dart'
-    as _i3;
+as _i3;
 import 'package:sos1/ui/views/emergency_mode/emergency_mode_view.dart' as _i8;
 import 'package:sos1/ui/views/language_selection/language_selection_view.dart'
-    as _i5;
+as _i5;
 import 'package:sos1/ui/views/medical_profile/medical_profile_view.dart' as _i4;
 import 'package:sos1/ui/views/settings/settings_view.dart' as _i6;
 import 'package:sos1/ui/views/sos_history/sos_history_view.dart' as _i7;
 import 'package:sos1/ui/views/voice_assistant/voice_assistant_view.dart' as _i2;
 import 'package:stacked/stacked.dart' as _i1;
 import 'package:stacked_services/stacked_services.dart' as _i10;
+import 'package:sos1/ui/views/legal/privacy_policy/privacy_screen_view.dart' as _i12;
+import 'package:sos1/ui/views/legal/terms_of_use/terms_of_use_view.dart' as _i13;
+import 'package:sos1/ui/views/edit_medical_profile/edit_medical_profile_view.dart' as _i14;
 
 class Routes {
   static const voiceAssistantView = '/';
@@ -34,6 +37,12 @@ class Routes {
 
   static const emergencyModeView = '/emergency-mode-view';
 
+  static const termsOfUseView = '/terms-of-use-view';
+
+  static const privacyPolicyView = '/privacy-policy-view';
+
+  static const editMedicalProfileView = '/edit_medical_profile_view';
+
   static const all = <String>{
     voiceAssistantView,
     emergencyContactsView,
@@ -42,6 +51,9 @@ class Routes {
     settingsView,
     sOSHistoryView,
     emergencyModeView,
+    privacyPolicyView,
+    termsOfUseView,
+    editMedicalProfileView,
   };
 }
 
@@ -74,6 +86,18 @@ class StackedRouter extends _i1.RouterBase {
     _i1.RouteDef(
       Routes.emergencyModeView,
       page: _i8.EmergencyModeView,
+    ),
+    _i1.RouteDef(
+      Routes.privacyPolicyView,
+      page: _i12.PrivacyPolicyView,
+    ),
+    _i1.RouteDef(
+      Routes.termsOfUseView,
+      page: _i13.TermsOfUseView,
+    ),
+    _i1.RouteDef(
+      Routes.editMedicalProfileView,
+      page: _i14.EditProfileView,
     ),
   ];
 
@@ -125,6 +149,24 @@ class StackedRouter extends _i1.RouterBase {
         settings: data,
       );
     },
+    _i12.PrivacyPolicyView: (data) {
+      return _i9.MaterialPageRoute<dynamic>(
+        builder: (context) => const _i12.PrivacyPolicyView(),
+        settings: data,
+      );
+    },
+    _i13.TermsOfUseView: (data) {
+      return _i9.MaterialPageRoute<dynamic>(
+        builder: (context) => const _i13.TermsOfUseView(),
+        settings: data,
+      );
+    },
+    _i14.EditProfileView: (data) {
+      return _i9.MaterialPageRoute<dynamic>(
+        builder: (context) => const _i14.EditProfileView(),
+        settings: data,
+      );
+    },
   };
 
   @override
@@ -167,9 +209,9 @@ class EmergencyModeViewArguments {
   @override
   int get hashCode {
     return key.hashCode ^
-        emergencyType.hashCode ^
-        emergencyDescription.hashCode ^
-        location.hashCode;
+    emergencyType.hashCode ^
+    emergencyDescription.hashCode ^
+    location.hashCode;
   }
 }
 
@@ -179,7 +221,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return navigateTo<dynamic>(Routes.voiceAssistantView,
         id: routerId,
@@ -193,7 +235,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return navigateTo<dynamic>(Routes.emergencyContactsView,
         id: routerId,
@@ -207,7 +249,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return navigateTo<dynamic>(Routes.medicalProfileView,
         id: routerId,
@@ -221,7 +263,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return navigateTo<dynamic>(Routes.languageSelectionView,
         id: routerId,
@@ -235,7 +277,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return navigateTo<dynamic>(Routes.settingsView,
         id: routerId,
@@ -249,7 +291,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return navigateTo<dynamic>(Routes.sOSHistoryView,
         id: routerId,
@@ -267,7 +309,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   }) async {
     return navigateTo<dynamic>(Routes.emergencyModeView,
         arguments: EmergencyModeViewArguments(
@@ -281,12 +323,54 @@ extension NavigatorStateExtension on _i10.NavigationService {
         transition: transition);
   }
 
+  Future<dynamic> navigateToPrivacyPolicyView([
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  ]) async {
+    return navigateTo<dynamic>(Routes.privacyPolicyView,
+        id: routerId,
+        preventDuplicates: preventDuplicates,
+        parameters: parameters,
+        transition: transition);
+  }
+
+  Future<dynamic> navigateToTermsOfUseView([
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  ]) async {
+    return navigateTo<dynamic>(Routes.termsOfUseView,
+        id: routerId,
+        preventDuplicates: preventDuplicates,
+        parameters: parameters,
+        transition: transition);
+  }
+
+  Future<dynamic> navigateToEditMedicalProfileView([
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  ]) async {
+    return navigateTo<dynamic>(Routes.editMedicalProfileView,
+        id: routerId,
+        preventDuplicates: preventDuplicates,
+        parameters: parameters,
+        transition: transition);
+  }
+
   Future<dynamic> replaceWithVoiceAssistantView([
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return replaceWith<dynamic>(Routes.voiceAssistantView,
         id: routerId,
@@ -300,7 +384,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return replaceWith<dynamic>(Routes.emergencyContactsView,
         id: routerId,
@@ -314,7 +398,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return replaceWith<dynamic>(Routes.medicalProfileView,
         id: routerId,
@@ -328,7 +412,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return replaceWith<dynamic>(Routes.languageSelectionView,
         id: routerId,
@@ -342,7 +426,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return replaceWith<dynamic>(Routes.settingsView,
         id: routerId,
@@ -356,7 +440,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   ]) async {
     return replaceWith<dynamic>(Routes.sOSHistoryView,
         id: routerId,
@@ -374,7 +458,7 @@ extension NavigatorStateExtension on _i10.NavigationService {
     bool preventDuplicates = true,
     Map<String, String>? parameters,
     Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
-        transition,
+    transition,
   }) async {
     return replaceWith<dynamic>(Routes.emergencyModeView,
         arguments: EmergencyModeViewArguments(
@@ -388,3 +472,4 @@ extension NavigatorStateExtension on _i10.NavigationService {
         transition: transition);
   }
 }
+

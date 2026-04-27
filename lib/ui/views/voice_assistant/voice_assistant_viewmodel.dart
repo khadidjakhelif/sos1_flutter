@@ -45,7 +45,10 @@ class VoiceAssistantViewModel extends BaseViewModel {
     // Initialize AI services
     await _aiSpeechService.initialize();
     await _aiTtsService.initialize();
-    
+
+    // update userCommand live as user speaks
+    _aiSpeechService.addListener(_onSpeechUpdate);
+
     // Listen to AI intent detection
     _intentSubscription = _aiSpeechService.intentStream.listen(_onEmergencyDetected);
     
@@ -61,10 +64,20 @@ class VoiceAssistantViewModel extends BaseViewModel {
     setBusy(false);
     notifyListeners();
   }
+
+  /// LIVE SPEECH DISPLAY
+  void _onSpeechUpdate() {
+    if (_aiSpeechService.isListening) {
+      _userCommand = _aiSpeechService.recognizedWords.isNotEmpty
+          ? _aiSpeechService.recognizedWords
+          : _aiSpeechService.lastWords;
+      notifyListeners();
+    }
+  }
   
   void _onEmergencyDetected(EmergencyIntent intent) async {
     print('🔥 EMERGENCY DETECTED: ${intent.type} (${intent.confidence})');
-    if (intent.isHighConfidence) {
+    if (intent.isHighConfidence || intent.needsImmediateResponse == true) {
       print('🚨 HIGH CONFIDENCE - Showing UI');
       _detectedEmergencyType = intent.type;
       _userCommand = intent.rawText;
@@ -92,28 +105,28 @@ class VoiceAssistantViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  Future<void> toggleListening() async {
-    try {
-      print('🎤 Toggle listening - Language: ${_languageService.currentLanguage.code}');
-      if (_aiSpeechService.isListening) {
-        await _aiSpeechService.stopListening();
-        _aiSpeechService.playStopBeep();
-      } else {
-        _showEmergencyResponse = false;
-        _detectedEmergencyType = '';
-        _userCommand = '';
-        _aiSpeechService.clearRecognizedWords();
+    Future<void> toggleListening() async {
+      try {
+        if (_aiSpeechService.isListening) {
+          await _aiSpeechService.stopListening();
+          _aiSpeechService.playStopBeep();
+          // Keep _userCommand showing the final recognized text
+        } else {
+          // Clear previous state before new session
+          _showEmergencyResponse = false;
+          _detectedEmergencyType = '';
+          _userCommand = '';           // clears so ExampleCommandText shows
+          _aiSpeechService.clearRecognizedWords();
+          notifyListeners();
+          _aiSpeechService.playStartBeep();
+          await _aiSpeechService.startListening();
+        }
+      } catch (e) {
+        print('Microphone error: $e');
+      } finally {
         notifyListeners();
-        _aiSpeechService.playStartBeep();
-        await _aiSpeechService.startListening();
       }
-    } catch (e) {
-      print('Microphone error: $e');
-      // Show error to user
-    } finally {
-      notifyListeners();
     }
-  }
   
   /// Navigate to Emergency Mode with detected emergency
   void navigateToEmergencyMode(EmergencyIntent? intent) {
@@ -131,19 +144,6 @@ class VoiceAssistantViewModel extends BaseViewModel {
     _navigationService.navigateToEmergencyModeView(
       emergencyType: emergencyType,
     );
-  }
-
-  // Fake emergency for testing
-  Future<void> testFireEmergency() async {
-    print('🧪 Manual fire test');
-    final fakeIntent = EmergencyIntent(
-      type: 'fire',
-      confidence: 0.9,
-      rawText: "Help there's a fire in",
-      severity: 8,
-      needsImmediateResponse: true,
-    );
-    _onEmergencyDetected(fakeIntent);
   }
   
   // Quick command handlers - now navigate directly to emergency mode
@@ -217,6 +217,7 @@ class VoiceAssistantViewModel extends BaseViewModel {
   @override
   void dispose() {
     _intentSubscription?.cancel();
+    _aiSpeechService.removeListener(_onSpeechUpdate);
     super.dispose();
   }
 }

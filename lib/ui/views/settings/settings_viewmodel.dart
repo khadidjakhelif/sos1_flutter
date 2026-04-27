@@ -6,7 +6,7 @@ import 'package:sos1/app/app.router.dart';
 class SettingsViewModel extends BaseViewModel {
   final _navigationService = locator<NavigationService>();
 
-  String get appVersion => 'v2.4.0';
+  String get appVersion => 'v1.0.0';
   String get emergencyNumber => '14 / 17';
 
   Future<void> initialize() async {
@@ -17,6 +17,14 @@ class SettingsViewModel extends BaseViewModel {
 
   void navigateToMedicalProfile() {
     _navigationService.navigateTo(Routes.medicalProfileView);
+  }
+
+  void navigateToPrivacyPolicy() {
+    _navigationService.navigateTo(Routes.privacyPolicyView);
+  }
+
+  void navigateToTermsOfUse() {
+    _navigationService.navigateTo(Routes.termsOfUseView);
   }
 
   void navigateToEmergencyContacts() {

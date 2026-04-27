@@ -86,7 +86,27 @@ class SettingsView extends StackedView<SettingsViewModel> {
                       subtitle: languageProvider.translate('sos_history_subtitle'),
                       onTap: viewModel.navigateToSOSHistory,
                     ),
-                    
+
+                    SizedBox(height: 12.h),
+
+                    _buildMenuItem(
+                      icon: Icons.security,
+                      iconBackgroundColor: const Color(0xFF607D8B),
+                      title: languageProvider.translate('privacy_policy'),
+                      subtitle: languageProvider.translate('privacy_policy_subtitle'),
+                      onTap: viewModel.navigateToPrivacyPolicy,
+                    ),
+
+                    SizedBox(height: 12.h),
+
+                    _buildMenuItem(
+                      icon: Icons.library_books_sharp,
+                      iconBackgroundColor: const Color(0xFF607D8B),
+                      title: languageProvider.translate('terms_of_use'),
+                      subtitle: languageProvider.translate('terms_of_use_subtitle'),
+                      onTap: viewModel.navigateToTermsOfUse,
+                    ),
+
                     SizedBox(height: 32.h),
                     
                     // Logout Button
