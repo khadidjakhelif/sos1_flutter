@@ -20,6 +20,7 @@ import 'package:sos1/ui/views/sos_history/sos_history_view.dart';
 import 'package:sos1/ui/views/emergency_mode/emergency_mode_view.dart';
 
 import '../ui/views/edit_medical_profile/edit_medical_profile_view.dart';
+import '../ui/views/login/login_view.dart';
 import '../utils/app_language_provider.dart';
 
 @StackedApp(
@@ -34,6 +35,7 @@ import '../utils/app_language_provider.dart';
     MaterialRoute(page: EditProfileView),
     MaterialRoute(page: TermsOfUseView),
     MaterialRoute(page: PrivacyPolicyView),
+    MaterialRoute(page: LoginView),
   ],
   dependencies: [
     LazySingleton(classType: NavigationService),

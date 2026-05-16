@@ -55,6 +55,12 @@ dependencies:
   # Maps (optional for SOS History)
   # google_maps_flutter: ^2.5.0
 
+  # Lock Screen Access
+  home_widget: ^0.6.0
+
+  # decode JWT token
+  jwt_decoder: ^2.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
