@@ -10,6 +10,8 @@ import '../services/medical_profile_service.dart';
 import '../services/sos_history_service.dart';
 import '../services/speech_recognition_service.dart';
 import '../services/text_to_speech_service.dart';
+import '../services/emergency_actions_service.dart';
+import '../ui/views/emergency_mode/emergency_mode_viewmodel.dart';
 import '../utils/app_language_provider.dart';
 
 final locator = StackedLocator.instance;
@@ -41,5 +43,12 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => ContactsService());
   locator.registerLazySingleton(() => MedicalProfileService());
   locator.registerLazySingleton(() => SOSHistoryService());
+  locator.registerLazySingleton(() => LanguageService());
+  locator.registerLazySingleton(() => LanguageProvider());
+  locator.registerLazySingleton(() => EmergencyActionsService());
+
+  // ViewModels get the SAME instances
+  locator
+      .registerFactory<EmergencyModeViewModel>(() => EmergencyModeViewModel());
   locator.registerLazySingleton(() => ApiService());
 }

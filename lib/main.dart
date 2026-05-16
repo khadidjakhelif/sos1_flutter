@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sos1/services/ai_tts_service.dart';
 import 'package:sos1/services/api_service.dart';
 import 'package:sos1/services/language_service.dart';
-import 'package:sos1/utils/app_config.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:provider/provider.dart';
 import 'app/app.locator.dart';
@@ -17,6 +16,8 @@ import 'package:home_widget/home_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Stacked services
 
   await setupLocator();
 

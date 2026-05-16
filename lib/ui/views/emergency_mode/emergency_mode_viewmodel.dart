@@ -11,6 +11,7 @@ import 'package:sos1/services/language_service.dart';
 import 'package:sos1/services/sos_history_service.dart';
 import 'package:sos1/models/sos_incident.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:sos1/services/emergency_actions_service.dart';
 
 class EmergencyModeViewModel extends BaseViewModel {
   final _aiAssistant = locator<AIEmergencyAssistant>();
@@ -18,6 +19,7 @@ class EmergencyModeViewModel extends BaseViewModel {
   final _historyService = locator<SOSHistoryService>();
   final _navigationService = locator<NavigationService>();
   final _languageService = locator<LanguageService>();
+  final _emergencyActions = locator<EmergencyActionsService>();
 
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
@@ -197,6 +199,7 @@ class EmergencyModeViewModel extends BaseViewModel {
       'medical': '15',
       'bleeding': '15',
       'choking': '15',
+      'unconscious': '15',
       'fire': '14',
       'police': '17',
     };
@@ -212,18 +215,22 @@ class EmergencyModeViewModel extends BaseViewModel {
   }
 
   Future<void> callEmergencyServices() async {
-    final emergencyNumber = _getEmergencyNumber(_emergencyType);
     final langCode = _languageService.currentLanguage.code;
 
     // ✅ Language-aware confirmation
     final confirmation = {
-          'fr': "Appel des secours au $emergencyNumber en cours.",
-          'ar': "الاتصال بخدمات الطوارئ على $emergencyNumber جارٍ.",
-          'en': "Calling emergency services at $emergencyNumber.",
-        }[langCode] ??
-        "Calling emergency services.";
+      'fr': "Envoi des alertes SMS et appel des secours en cours.",
+      'ar': "إرسال تنبيهات SMS والاتصال بخدمات الطوارئ جارٍ.",
+      'en': "Sending SMS alerts and calling emergency services.",
+    }[langCode] ?? "Sending SMS alerts and calling emergency services.";
 
     await _aiTts.speak(confirmation, urgent: true);
+  
+    // Trigger full SOS: SMS to all contacts + auto-call first contact
+    await _emergencyActions.triggerFullSOS(
+      emergencyType: _emergencyType,
+      customMessage: _emergencyDescription,
+    );
   }
 
   Future<void> shareLocation() async {
@@ -236,6 +243,15 @@ class EmergencyModeViewModel extends BaseViewModel {
         "Sharing your location.";
 
     await _aiTts.speak(message, urgent: true);
+    await _aiTts.speak(
+      "Partage de votre position GPS en cours.",
+      urgent: true,
+    );
+
+    await _emergencyActions.sendSOSToAllContacts(
+      emergencyType: _emergencyType,
+      customMessage: 'Partage de position manuel',
+    );
   }
 
   Future<void> endEmergency() async {

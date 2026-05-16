@@ -1,5 +1,7 @@
 import 'package:stacked/stacked.dart';
 import '../models/emergency_contact.dart';
+import 'package:sos1/app/app.locator.dart';
+import 'emergency_actions_service.dart';
 
 class ContactsService with ListenableServiceMixin {
   final ReactiveValue<List<PublicService>> _publicServices = ReactiveValue<List<PublicService>>([]);
@@ -43,20 +45,13 @@ class ContactsService with ListenableServiceMixin {
   }
 
   void _initializePersonalContacts() {
+    // Default emergency contact — user's own number
     _personalContacts.value = [
       EmergencyContact(
         id: '1',
-        name: 'Khadidja (Maman)',
-        phoneNumber: '+213 555 12 34 56',
-        relation: 'Mère',
-        smsAlertEnabled: true,
-        autoCallEnabled: false,
-      ),
-      EmergencyContact(
-        id: '2',
-        name: 'Ahmed (Frère)',
-        phoneNumber: '+213 661 98 76 54',
-        relation: 'Frère',
+        name: 'Khadidja',
+        phoneNumber: '0782421992',
+        relation: 'Contact principal',
         smsAlertEnabled: true,
         autoCallEnabled: true,
       ),
@@ -86,15 +81,18 @@ class ContactsService with ListenableServiceMixin {
     notifyListeners();
   }
 
+  /// Call a public service (real number — Police, SAMU, etc.)
   Future<void> callPublicService(String serviceId) async {
-    // Implement phone call functionality
     final service = _publicServices.value.firstWhere((s) => s.id == serviceId);
-    print('Calling ${service.name} at ${service.shortNumber}');
+    final actions = locator<EmergencyActionsService>();
+    await actions.callNumber(service.shortNumber);
   }
 
+  /// Call a personal emergency contact (real number)
   Future<void> callContact(String contactId) async {
-    // Implement phone call functionality
     final contact = _personalContacts.value.firstWhere((c) => c.id == contactId);
-    print('Calling ${contact.name} at ${contact.phoneNumber}');
+    final actions = locator<EmergencyActionsService>();
+    await actions.callNumber(contact.phoneNumber);
   }
 }
+
