@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:sos1/models/language.dart';
+import 'package:sos1/services/api_service.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/app/app.locator.dart';
@@ -10,7 +11,6 @@ import 'package:sos1/services/language_service.dart';
 import 'package:sos1/services/sos_history_service.dart';
 import 'package:sos1/models/sos_incident.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-
 
 class EmergencyModeViewModel extends BaseViewModel {
   final _aiAssistant = locator<AIEmergencyAssistant>();
@@ -22,7 +22,7 @@ class EmergencyModeViewModel extends BaseViewModel {
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
   bool get isListening => _isListening;
-  
+
   // Reactive state
   bool get isProcessing => _aiAssistant.isProcessing;
   List<ChatMessage> get messages => _aiAssistant.messages;
@@ -30,19 +30,20 @@ class EmergencyModeViewModel extends BaseViewModel {
   int get currentStepIndex => _aiAssistant.currentStepIndex;
   bool get isEmergencyActive => _aiAssistant.isEmergencyActive;
   bool get isSpeaking => _aiTts.isSpeaking;
-  
+
   // Emergency info
   String _emergencyType = '';
   String _emergencyDescription = '';
   String? _userLocation;
   DateTime _emergencyStartTime = DateTime.now();
-  
+
   String get emergencyType => _emergencyType;
   String get emergencyDescription => _emergencyDescription;
   String? get userLocation => _userLocation;
-  
+
   Timer? _elapsedTimer;
-  final ReactiveValue<Duration> _elapsedTime = ReactiveValue<Duration>(Duration.zero);
+  final ReactiveValue<Duration> _elapsedTime =
+      ReactiveValue<Duration>(Duration.zero);
   Duration get elapsedTime => _elapsedTime.value;
 
   final TextEditingController textController = TextEditingController();
@@ -57,10 +58,11 @@ class EmergencyModeViewModel extends BaseViewModel {
     _elapsedTimer?.cancel();
     super.dispose();
   }
-  
+
   String get formattedElapsedTime {
     final minutes = _elapsedTime.value.inMinutes.toString().padLeft(2, '0');
-    final seconds = (_elapsedTime.value.inSeconds % 60).toString().padLeft(2, '0');
+    final seconds =
+        (_elapsedTime.value.inSeconds % 60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
   }
 
@@ -84,20 +86,34 @@ class EmergencyModeViewModel extends BaseViewModel {
     _emergencyDescription = emergencyDescription ?? '';
     _userLocation = location;
     _emergencyStartTime = DateTime.now();
-    
+
     // Start elapsed time counter
     _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _elapsedTime.value = DateTime.now().difference(_emergencyStartTime);
       notifyListeners();
     });
-    
+
     // Start AI emergency session
     await _aiAssistant.startEmergencySession(
       emergencyType: emergencyType,
       userMessage: emergencyDescription,
       location: location,
     );
-    
+
+    final _apiService = locator<ApiService>();
+
+    // report to backend
+    try {
+      await _apiService.reportEmergency(
+        type: emergencyType,
+        severity: 'Critical',
+        locationDescription: location,
+      );
+    } catch (e) {
+      print(
+          'Could not report to backend: $e'); // silent fail — emergency still works
+    }
+
     setBusy(false);
   }
 
@@ -127,7 +143,8 @@ class EmergencyModeViewModel extends BaseViewModel {
       _sendTranscript();
     } else {
       _isListening = true;
-      print('🎤 Toggle listening - Language: ${_languageService.currentLanguage.code}');
+      print(
+          '🎤 Toggle listening - Language: ${_languageService.currentLanguage.code}');
       notifyListeners();
       await _speech.listen(
         onResult: (result) {
@@ -138,7 +155,7 @@ class EmergencyModeViewModel extends BaseViewModel {
           );
           notifyListeners();
         },
-        localeId: _getLocaleId(),   // get app language
+        localeId: _getLocaleId(), // get app language
         pauseFor: const Duration(seconds: 3),
         listenFor: const Duration(seconds: 30),
       );
@@ -166,7 +183,8 @@ class EmergencyModeViewModel extends BaseViewModel {
     final trimmed = message.trim();
     if (trimmed.isNotEmpty) {
       print('📤 [1] sendMessage START: "$trimmed"');
-      await _aiAssistant.processUserMessage(trimmed,_languageService.getLanguageCode());
+      await _aiAssistant.processUserMessage(
+          trimmed, _languageService.getLanguageCode());
       print('📤 [3] AI processing COMPLETE');
       notifyListeners();
       print('📤 [4] UI notified');
@@ -175,8 +193,12 @@ class EmergencyModeViewModel extends BaseViewModel {
 
   String _getEmergencyNumber(String type) {
     final numbers = {
-      'cardiac': '15', 'medical': '15', 'bleeding': '15',
-      'choking': '15', 'fire': '14', 'police': '17',
+      'cardiac': '15',
+      'medical': '15',
+      'bleeding': '15',
+      'choking': '15',
+      'fire': '14',
+      'police': '17',
     };
     return numbers[type.toLowerCase()] ?? '15';
   }
@@ -195,10 +217,11 @@ class EmergencyModeViewModel extends BaseViewModel {
 
     // ✅ Language-aware confirmation
     final confirmation = {
-      'fr': "Appel des secours au $emergencyNumber en cours.",
-      'ar': "الاتصال بخدمات الطوارئ على $emergencyNumber جارٍ.",
-      'en': "Calling emergency services at $emergencyNumber.",
-    }[langCode] ?? "Calling emergency services.";
+          'fr': "Appel des secours au $emergencyNumber en cours.",
+          'ar': "الاتصال بخدمات الطوارئ على $emergencyNumber جارٍ.",
+          'en': "Calling emergency services at $emergencyNumber.",
+        }[langCode] ??
+        "Calling emergency services.";
 
     await _aiTts.speak(confirmation, urgent: true);
   }
@@ -206,23 +229,24 @@ class EmergencyModeViewModel extends BaseViewModel {
   Future<void> shareLocation() async {
     final langCode = _languageService.currentLanguage.code;
     final message = {
-      'fr': "Partage de votre position GPS avec les secours.",
-      'ar': "مشاركة موقع GPS الخاص بك مع خدمات الإنقاذ.",
-      'en': "Sharing your GPS location with emergency services.",
-    }[langCode] ?? "Sharing your location.";
+          'fr': "Partage de votre position GPS avec les secours.",
+          'ar': "مشاركة موقع GPS الخاص بك مع خدمات الإنقاذ.",
+          'en': "Sharing your GPS location with emergency services.",
+        }[langCode] ??
+        "Sharing your location.";
 
     await _aiTts.speak(message, urgent: true);
   }
 
   Future<void> endEmergency() async {
     _elapsedTimer?.cancel();
-    
+
     // Save to history
     await _saveToHistory();
-    
+
     // End AI session
     await _aiAssistant.endEmergencySession();
-    
+
     // Navigate back
     _navigationService.back();
   }
@@ -237,7 +261,7 @@ class EmergencyModeViewModel extends BaseViewModel {
       status: 'completed',
       details: _emergencyDescription,
     );
-    
+
     await _historyService.addIncident(incident);
   }
 
@@ -253,5 +277,4 @@ class EmergencyModeViewModel extends BaseViewModel {
     };
     return types[emergencyType.toLowerCase()] ?? IncidentType.other;
   }
-
 }

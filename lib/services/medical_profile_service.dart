@@ -1,4 +1,6 @@
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:sos1/app/app.locator.dart';
+import 'package:sos1/services/api_service.dart';
 import 'package:stacked/stacked.dart';
 import '../models/medical_profile.dart';
 
@@ -6,8 +8,10 @@ class MedicalProfileService with ListenableServiceMixin {
   static const _boxName = 'medicalProfile';
   static const _profileKey = 'profile';
 
-  final ReactiveValue<MedicalProfile?> _profile = ReactiveValue<MedicalProfile?>(null);
+  final ReactiveValue<MedicalProfile?> _profile =
+      ReactiveValue<MedicalProfile?>(null);
   MedicalProfile? get profile => _profile.value;
+  final _apiService = locator<ApiService>();
 
   // Called once from setupLocator after the box is opened
   Future<void> initialize() async {
@@ -21,7 +25,6 @@ class MedicalProfileService with ListenableServiceMixin {
     // If null → profile stays null, UI should prompt user to fill in their info
     notifyListeners();
   }
-
 
   Future<void> updateProfile(MedicalProfile updatedProfile) async {
     await _saveAndSet(updatedProfile.copyWith(lastUpdated: DateTime.now()));
@@ -66,11 +69,17 @@ class MedicalProfileService with ListenableServiceMixin {
     notifyListeners();
   }
 
-
   Future<void> _saveAndSet(MedicalProfile updated) async {
     final box = Hive.box<MedicalProfile>(_boxName);
     await box.put(_profileKey, updated);
     _profile.value = updated;
     notifyListeners();
+
+    // sync to backend silently
+    try {
+      await _apiService.syncMedicalProfile(updated);
+    } catch (e) {
+      print('Profile sync failed: $e'); // silent — local save already done
+    }
   }
 }

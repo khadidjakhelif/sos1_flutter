@@ -544,6 +544,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.1"
+  home_widget:
+    dependency: "direct main"
+    description:
+      name: home_widget
+      sha256: "2a0fdd6267ff975bd07bedf74686bd5577200f504f5de36527ac1b56bdbe68e3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.0"
   http:
     dependency: transitive
     description:
@@ -600,6 +608,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.9.0"
+  jwt_decoder:
+    dependency: "direct main"
+    description:
+      name: jwt_decoder
+      sha256: "54774aebf83f2923b99e6416b4ea915d47af3bde56884eb622de85feabbc559f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   langchain:
     dependency: "direct main"
     description:
