@@ -3,14 +3,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sos1/models/medical_profile.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://YOUR_NGROK_URL'; // change this
+  static const String baseUrl =
+      'http://192.168.1.85:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
   static const String _tokenKey = 'jwt_token';
   static const String _userKey = 'current_user';
 
   final Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+    sendTimeout: const Duration(seconds: 30),
     headers: {'Content-Type': 'application/json'},
   ));
 
@@ -43,7 +45,7 @@ class ApiService {
       'password': password,
       'company_code': companyCode.toUpperCase(),
     });
-    await _saveToken(response.data['data']['token']);
+    await _saveToken(response.data['data']['access_token']);
     return response.data['data'];
   }
 
@@ -61,7 +63,7 @@ class ApiService {
       'phone': phone,
       'company_code': companyCode.toUpperCase(),
     });
-    await _saveToken(response.data['data']['token']);
+    await _saveToken(response.data['data']['access_token']);
     return response.data['data'];
   }
 
