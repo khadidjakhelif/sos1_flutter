@@ -36,7 +36,17 @@ class _LoginViewState extends State<LoginView> {
     if (_employeeIdController.text.isEmpty ||
         _passwordController.text.isEmpty ||
         _companyCodeController.text.isEmpty) {
-      setState(() => _errorMessage = 'Veuillez remplir tous les champs');
+      setState(() => _errorMessage = 'Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    if (!_isLoginMode && _fullNameController.text.isEmpty) {
+      setState(() => _errorMessage = 'Veuillez entrer votre nom complet.');
+      return;
+    }
+
+    if (_passwordController.text.length < 6) {
+      setState(() => _errorMessage = 'Le mot de passe doit contenir au moins 6 caractères.');
       return;
     }
 
@@ -65,11 +75,21 @@ class _LoginViewState extends State<LoginView> {
       _navigationService.navigateTo(Routes.voiceAssistantView);
     } on DioException catch (e) {
       setState(() {
-        _errorMessage = e.response?.data['message'] ??
-            'Erreur de connexion. Vérifiez votre réseau.';
+        final data = e.response?.data;
+        if (data is Map) {
+          if (data['detail'] is List) {
+            final firstError = data['detail'][0];
+            _errorMessage = 'Erreur de saisie: ${firstError['loc'].last} - ${firstError['msg']}';
+          } else {
+            _errorMessage = data['message'] ?? data['detail']?.toString() ?? 'Erreur de connexion.';
+          }
+        } else {
+          _errorMessage = 'Erreur de connexion. Vérifiez votre réseau.';
+        }
       });
     } catch (e) {
-      setState(() => _errorMessage = 'Erreur inattendue. Réessayez.');
+      print('Unexpected error during registration/login: $e');
+      setState(() => _errorMessage = 'Erreur inattendue: $e');
     } finally {
       setState(() => _isLoading = false);
     }

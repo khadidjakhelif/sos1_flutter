@@ -43,8 +43,6 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => ContactsService());
   locator.registerLazySingleton(() => MedicalProfileService());
   locator.registerLazySingleton(() => SOSHistoryService());
-  locator.registerLazySingleton(() => LanguageService());
-  locator.registerLazySingleton(() => LanguageProvider());
   locator.registerLazySingleton(() => EmergencyActionsService());
 
   // ViewModels get the SAME instances

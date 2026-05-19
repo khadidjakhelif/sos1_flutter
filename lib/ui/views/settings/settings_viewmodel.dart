@@ -2,9 +2,11 @@ import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/app/app.locator.dart';
 import 'package:sos1/app/app.router.dart';
+import 'package:sos1/services/api_service.dart';
 
 class SettingsViewModel extends BaseViewModel {
   final _navigationService = locator<NavigationService>();
+  final _apiService = locator<ApiService>();
 
   String get appVersion => 'v1.0.0';
   String get emergencyNumber => '14 / 17';
@@ -45,9 +47,10 @@ class SettingsViewModel extends BaseViewModel {
   }
 
   Future<void> logout() async {
-    // Implement logout functionality
-    print('Logout');
-    _navigationService.clearStackAndShow('/');
+    setBusy(true);
+    await _apiService.logout();
+    setBusy(false);
+    _navigationService.clearStackAndShow(Routes.loginView);
   }
 
   void goBack() {
