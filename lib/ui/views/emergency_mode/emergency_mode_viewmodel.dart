@@ -86,7 +86,18 @@ class EmergencyModeViewModel extends BaseViewModel {
 
     _emergencyType = emergencyType;
     _emergencyDescription = emergencyDescription ?? '';
-    _userLocation = location;
+    
+    if (location != null && location.isNotEmpty) {
+      _userLocation = location;
+    } else {
+      final pos = _emergencyActions.lastKnownPosition;
+      if (pos != null) {
+        _userLocation = '${pos.latitude.toStringAsFixed(6)}, ${pos.longitude.toStringAsFixed(6)}';
+      } else {
+        _userLocation = 'Position GPS en attente';
+      }
+    }
+    
     _emergencyStartTime = DateTime.now();
 
     // Start elapsed time counter
@@ -109,7 +120,7 @@ class EmergencyModeViewModel extends BaseViewModel {
       await _apiService.reportEmergency(
         type: emergencyType,
         severity: 'Critical',
-        locationDescription: location,
+        locationDescription: _userLocation,
       );
     } catch (e) {
       print(

@@ -4,7 +4,7 @@ import 'package:sos1/models/medical_profile.dart';
 
 class ApiService {
   static const String baseUrl =
-      'http://192.168.1.85:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
+      'http://172.20.10.2:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
   static const String _tokenKey = 'jwt_token';
   static const String _userKey = 'current_user';
 
@@ -76,13 +76,43 @@ class ApiService {
     double? longitude,
     String? locationDescription,
   }) async {
-    await _dio.post('/emergencies', data: {
-      'type': type,
+    // Map flutter's lowercase emergency types to the backend's allowed EMERGENCY_TYPES
+    String mappedType;
+    switch (type.toLowerCase()) {
+      case 'cardiac':
+        mappedType = 'Cardiac';
+        break;
+      case 'medical':
+        mappedType = 'Medical';
+        break;
+      case 'bleeding':
+        mappedType = 'Trauma';
+        break;
+      case 'choking':
+        mappedType = 'Respiratory';
+        break;
+      case 'unconscious':
+        mappedType = 'Neurological';
+        break;
+      case 'fire':
+        mappedType = 'Fire';
+        break;
+      case 'police':
+        mappedType = 'Police';
+        break;
+      default:
+        mappedType = 'Medical'; // Default fallback
+    }
+
+    final response = await _dio.post('/emergencies', data: {
+      'type': mappedType,
       'severity': severity,
       'latitude': latitude,
       'longitude': longitude,
       'location_description': locationDescription,
     });
+    print(response.data);
+    print('from the api ');
   }
 
   Future<void> resolveEmergency(String emergencyId) async {

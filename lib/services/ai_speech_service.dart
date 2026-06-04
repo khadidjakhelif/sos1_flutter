@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:stacked/stacked.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'ai_provider_service.dart';
 import '../models/language.dart';
 import '../utils/app_config.dart';
 import 'language_service.dart';
@@ -13,7 +13,7 @@ import 'package:audioplayers/audioplayers.dart';
 class AISpeechService with ListenableServiceMixin {
   final SpeechToText _speechToText = SpeechToText();
   final LanguageService _languageService;
-  GenerativeModel? _geminiModel;
+  final AIProviderService _aiProvider = AIProviderService();
   
   final ReactiveValue<bool> _isListening = ReactiveValue<bool>(false);
   final ReactiveValue<bool> _isAvailable = ReactiveValue<bool>(false);
@@ -75,16 +75,13 @@ class AISpeechService with ListenableServiceMixin {
     } catch (e) {
       print('💥 Speech init FAILED: $e');
     }
-    //Initializing gemini model
+    //Initializing AI provider
     try {
-      print('🤖 Initializing Gemini AI...');
-      _geminiModel = GenerativeModel(
-        model: 'gemini-2.5-flash',
-        apiKey: AppConfig.geminiApiKey,
-      );
-      print('✅ Gemini AI initialized successfully');
+      print('🤖 Initializing AI Provider...');
+      await _aiProvider.initialize();
+      print('✅ AI Provider initialized successfully: ${_aiProvider.providerName}');
     } catch (e) {
-      print('❌ Gemini initialization error: $e');
+      print('❌ AI Provider initialization error: $e');
     }
 
     notifyListeners();
@@ -241,18 +238,10 @@ class AISpeechService with ListenableServiceMixin {
     }
   }
 
-  /// AI-powered emergency detection using Gemini
+  /// AI-powered emergency detection
   Future<void> _processWithAI(String text) async {
     print('🤖 ========== _processWithAI STARTED ==========');
     print('📝 Input text: "$text"');
-    if (_geminiModel == null) {
-      // Fallback to keyword detection
-      print('⚠️ Gemini model is null, using fallback');
-      _detectEmergencyQuick(text);
-      return;
-    }
-
-    print('✅ Gemini model exists, proceeding...');
 
     _isProcessing.value = true;
     notifyListeners();
@@ -275,8 +264,8 @@ Réponds UNIQUEMENT en JSON:
   "description": "description courte",
   "needsImmediateResponse": true/false
 }
-''';final response = await _geminiModel!.generateContent([Content.text(prompt)]);
-      final responseText = response.text;
+''';
+      final responseText = await _aiProvider.generateContent(prompt);
       
       if (responseText != null) {
         // Parse AI response
