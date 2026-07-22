@@ -87,12 +87,17 @@ class EmergencyModeViewModel extends BaseViewModel {
     _emergencyType = emergencyType;
     _emergencyDescription = emergencyDescription ?? '';
     
+    double? reportLat;
+    double? reportLng;
+
     if (location != null && location.isNotEmpty) {
       _userLocation = location;
     } else {
       final pos = _emergencyActions.lastKnownPosition;
       if (pos != null) {
         _userLocation = '${pos.latitude.toStringAsFixed(6)}, ${pos.longitude.toStringAsFixed(6)}';
+        reportLat = pos.latitude;
+        reportLng = pos.longitude;
       } else {
         _userLocation = 'Position GPS en attente';
       }
@@ -120,6 +125,8 @@ class EmergencyModeViewModel extends BaseViewModel {
       await _apiService.reportEmergency(
         type: emergencyType,
         severity: 'Critical',
+        latitude: reportLat,
+        longitude: reportLng,
         locationDescription: _userLocation,
       );
     } catch (e) {

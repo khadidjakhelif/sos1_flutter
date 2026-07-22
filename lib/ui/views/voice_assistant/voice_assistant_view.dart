@@ -30,25 +30,33 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
 
                 // Main Content — the orb
                 Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Show recognized text above orb when there's speech
-                      if (viewModel.userCommand.isNotEmpty)
-                        _buildRecognizedText(viewModel.userCommand),
-
-                      // The 3D Orb
-                      SosOrb(
-                        isListening: viewModel.isListening,
-                        isProcessing: viewModel.isProcessing,
-                        onTap: viewModel.toggleListening,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: MediaQuery.of(context).size.height * 0.5,
                       ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Show recognized text above orb when there's speech
+                          if (viewModel.userCommand.isNotEmpty)
+                            _buildRecognizedText(viewModel.userCommand),
 
-                      // Emergency Response Card
-                      if (viewModel.showEmergencyResponse &&
-                          viewModel.detectedEmergencyType.isNotEmpty)
-                        _buildEmergencyResponse(viewModel, languageProvider),
-                    ],
+                          // The 3D Orb
+                          SosOrb(
+                            isListening: viewModel.isListening,
+                            isProcessing: viewModel.isProcessing,
+                            onTap: viewModel.toggleListening,
+                          ),
+
+                          // Emergency Response Card
+                          if (viewModel.showEmergencyResponse &&
+                              viewModel.detectedEmergencyType.isNotEmpty)
+                            _buildEmergencyResponse(viewModel, languageProvider),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
 

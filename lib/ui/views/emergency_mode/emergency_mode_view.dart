@@ -10,14 +10,12 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
   final String? emergencyDescription;
   final String? location;
 
-
-   const EmergencyModeView({
+  const EmergencyModeView({
     super.key,
     required this.emergencyType,
     this.emergencyDescription,
     this.location,
   });
-
 
   @override
   Widget builder(
@@ -170,7 +168,8 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
         reverse: true,
         itemCount: viewModel.messages.length,
         itemBuilder: (context, index) {
-          final message = viewModel.messages[viewModel.messages.length - 1 - index];
+          final message =
+              viewModel.messages[viewModel.messages.length - 1 - index];
           return _buildMessageBubble(message);
         },
       ),
@@ -236,12 +235,10 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
           ],
         ),
       ),
-    ).animate()
-      .fadeIn(duration: 300.ms)
-      .slideX(
-        begin: isUser ? 0.2 : -0.2,
-        end: 0,
-      );
+    ).animate().fadeIn(duration: 300.ms).slideX(
+          begin: isUser ? 0.2 : -0.2,
+          end: 0,
+        );
   }
 
   Widget _buildQuickActions(EmergencyModeViewModel viewModel) {
@@ -267,13 +264,13 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
             label: 'PARTAGER POS',
             onTap: viewModel.shareLocation,
           ),
-
-          SizedBox(width: 8,),
-
+          SizedBox(
+            width: 8,
+          ),
           _buildMicButton(viewModel),
-
-          SizedBox(width: 8,),
-
+          SizedBox(
+            width: 8,
+          ),
           _buildQuickActionButton(
             icon: Icons.skip_next,
             label: 'ÉTAPE SUIVANTE',
@@ -303,54 +300,49 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
             width: isListening ? 56.w : 48.w,
             height: isListening ? 56.w : 48.w,
             decoration: BoxDecoration(
-              color: isListening
-                  ? Colors.white
-                  : Colors.white.withOpacity(0.15),
+              color:
+                  isListening ? Colors.white : Colors.white.withOpacity(0.15),
               borderRadius: BorderRadius.circular(isListening ? 28.r : 12.r),
               boxShadow: isListening
                   ? [
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.4),
-                  blurRadius: 12,
-                  spreadRadius: 4,
-                ),
-              ]
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.4),
+                        blurRadius: 12,
+                        spreadRadius: 4,
+                      ),
+                    ]
                   : [],
             ),
             child: Icon(
               isListening ? Icons.mic : Icons.mic_none,
-              color: isListening
-                  ? const Color(0xFFB71C1C)
-                  : Colors.white,
+              color: isListening ? const Color(0xFFB71C1C) : Colors.white,
               size: 24.sp,
             ),
           )
               .animate(
-            onPlay: (controller) =>
-            isListening ? controller.repeat() : controller.reset(),
-          )
+                onPlay: (controller) =>
+                    isListening ? controller.repeat() : controller.reset(),
+              )
               .scaleXY(
-            begin: 1.0,
-            end: isListening ? 1.08 : 1.0,
-            duration: 600.ms,
-            curve: Curves.easeInOut,
-          )
+                begin: 1.0,
+                end: isListening ? 1.08 : 1.0,
+                duration: 600.ms,
+                curve: Curves.easeInOut,
+              )
               .then()
               .scaleXY(
-            begin: 1.08,
-            end: 1.0,
-            duration: 600.ms,
-            curve: Curves.easeInOut,
-          ),
+                begin: 1.08,
+                end: 1.0,
+                duration: 600.ms,
+                curve: Curves.easeInOut,
+              ),
           SizedBox(height: 6.h),
           Text(
             isListening ? 'ÉCOUTE...' : 'MICRO',
             style: TextStyle(
               fontSize: 9.sp,
               fontWeight: FontWeight.w600,
-              color: isListening
-                  ? Colors.white
-                  : Colors.white.withOpacity(0.8),
+              color: isListening ? Colors.white : Colors.white.withOpacity(0.8),
             ),
           ),
         ],
@@ -501,7 +493,8 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
   }
 
   @override
-  EmergencyModeViewModel viewModelBuilder(BuildContext context) => EmergencyModeViewModel();
+  EmergencyModeViewModel viewModelBuilder(BuildContext context) =>
+      EmergencyModeViewModel();
 
   @override
   void onViewModelReady(EmergencyModeViewModel viewModel) {

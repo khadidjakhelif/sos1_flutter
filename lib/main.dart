@@ -11,6 +11,8 @@ import 'models/language.dart';
 import 'utils/app_theme.dart';
 import 'utils/app_language_provider.dart';
 import 'models/medical_profile.dart';
+import 'package:sos1/services/medical_profile_service.dart';
+import 'package:sos1/services/emergency_actions_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:home_widget/home_widget.dart';
 
@@ -50,6 +52,13 @@ void main() async {
 
   // Open the box before the locator so the service can access it
   await Hive.openBox<MedicalProfile>('medicalProfile');
+
+  // Load saved medical profile into memory
+  await locator<MedicalProfileService>().initialize();
+
+  // Request location permission and warm up GPS at launch,
+  // so the victim's position is always ready for an emergency.
+  await locator<EmergencyActionsService>().initialize();
 
   // Handle widget tap that launched the app
   HomeWidget.setAppGroupId('group.com.example.sos1');

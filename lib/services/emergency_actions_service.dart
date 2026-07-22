@@ -21,7 +21,47 @@ class EmergencyActionsService with ListenableServiceMixin {
   String get lastActionStatus => _lastActionStatus.value;
 
   EmergencyActionsService() {
+    // Periodic caching starts only after initialize() is called
+  }
+
+  /// Call this once at app startup to request location permission and warm up GPS.
+  /// This ensures the location is available from the very first emergency.
+  Future<void> initialize() async {
+    // 1. Request location permission upfront
+    await _requestLocationPermission();
+
+    // 2. Try to get a warm-up fix immediately in the background
+    _warmUpGps();
+
+    // 3. Start the periodic cache loop
     _cacheLocationPeriodically();
+  }
+
+  /// Gets an initial GPS fix silently in the background right after launch.
+  Future<void> _warmUpGps() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      final perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) return;
+
+      // Use last known first (instant, no GPS satellite wait)
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) {
+        _lastKnownPosition = lastKnown;
+      }
+
+      // Then get a fresh accurate fix
+      final fresh = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 15),
+      );
+      _lastKnownPosition = fresh;
+    } catch (_) {
+      // Silently ignore — periodic cache will retry
+    }
   }
 
   // ─────────────────────────────────────────

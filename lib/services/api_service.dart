@@ -4,7 +4,7 @@ import 'package:sos1/models/medical_profile.dart';
 
 class ApiService {
   static const String baseUrl =
-      'http://172.20.10.2:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
+      'http://192.168.1.88:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
   static const String _tokenKey = 'jwt_token';
   static const String _userKey = 'current_user';
 
