@@ -72,7 +72,7 @@ class _LoginViewState extends State<LoginView> {
         );
       }
       // Navigate to main app
-      _navigationService.navigateTo(Routes.voiceAssistantView);
+      _navigationService.clearStackAndShowView(Routes.voiceAssistantView);
     } on DioException catch (e) {
       setState(() {
         final data = e.response?.data;
@@ -98,7 +98,9 @@ class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     return Consumer<LanguageProvider>(
-      builder: (context, lp, _) => Scaffold(
+      builder: (context, lp, _) => PopScope(
+        canPop: false, // Prevent back button from bypassing login
+        child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
           child: SingleChildScrollView(
@@ -237,6 +239,7 @@ class _LoginViewState extends State<LoginView> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

@@ -38,7 +38,7 @@
     <uses-feature android:name="android.hardware.microphone" android:required="true" />
     
     <application
-        android:label="SOS1"
+        android:label="EchoAlert"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
