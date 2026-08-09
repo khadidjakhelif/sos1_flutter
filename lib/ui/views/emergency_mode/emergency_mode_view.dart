@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart'; // NEW — for timestamp formatting
 import 'package:stacked/stacked.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'emergency_mode_viewmodel.dart';
@@ -28,23 +29,160 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
       body: SafeArea(
         child: Column(
           children: [
-            // Emergency Header
+            // Emergency Header (UNCHANGED)
             _buildEmergencyHeader(viewModel),
 
-            // Chat Messages
+            // NEW: Resolution banner — shown when officer resolves from dashboard
+            if (viewModel.resolution != null)
+              _buildResolutionBanner(viewModel),
+
+            // Chat Messages (UNCHANGED)
             Expanded(
               child: _buildChatArea(viewModel),
             ),
 
-            // Quick Actions
+            // Quick Actions (UNCHANGED)
             _buildQuickActions(viewModel),
 
-            // Input Area
+            // Input Area (UNCHANGED)
             _buildInputArea(viewModel),
           ],
         ),
       ),
     );
+  }
+
+  // NEW: resolution banner displayed when the safety officer resolves the emergency
+  Widget _buildResolutionBanner(EmergencyModeViewModel viewModel) {
+    final resolution = viewModel.resolution!;
+
+    // Format the resolved timestamp if available
+    String timeLabel = '';
+    if (resolution.resolvedAt != null) {
+      timeLabel = DateFormat('HH:mm').format(resolution.resolvedAt!.toLocal());
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+        ),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFF4CAF50), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4CAF50).withOpacity(0.3),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Status row
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(6.w),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle,
+                  color: Colors.white,
+                  size: 18.sp,
+                ),
+              )
+                  .animate(onPlay: (c) => c.repeat())
+                  .scaleXY(begin: 1.0, end: 1.12, duration: 900.ms, curve: Curves.easeInOut)
+                  .then()
+                  .scaleXY(begin: 1.12, end: 1.0, duration: 900.ms, curve: Curves.easeInOut),
+              SizedBox(width: 10.w),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'URGENCE RÉSOLUE',
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white.withOpacity(0.8),
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    resolution.responderLabel,
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              // ETA chip
+              if (resolution.etaMinutes != null)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Text(
+                    'ETA ${resolution.etaMinutes} min',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+
+          // Timestamp row
+          if (timeLabel.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            Row(
+              children: [
+                Icon(Icons.access_time, color: Colors.white54, size: 12.sp),
+                SizedBox(width: 4.w),
+                Text(
+                  'Résolu à $timeLabel',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: Colors.white54,
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          // Notes row
+          if (resolution.notes != null && resolution.notes!.isNotEmpty) ...[
+            SizedBox(height: 6.h),
+            Text(
+              resolution.notes!,
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: Colors.white70,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ],
+      ),
+    )
+        .animate()
+        .slideY(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOut)
+        .fadeIn(duration: 300.ms);
   }
 
   Widget _buildEmergencyHeader(EmergencyModeViewModel viewModel) {

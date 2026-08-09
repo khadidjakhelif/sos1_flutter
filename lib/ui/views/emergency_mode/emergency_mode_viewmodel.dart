@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
+import 'package:sos1/models/emergency_history.dart';
+import 'package:sos1/models/emergency_resolution.dart'; // NEW
 import 'package:sos1/models/language.dart';
 import 'package:sos1/services/api_service.dart';
+import 'package:sos1/services/emergency_sse_service.dart'; // NEW
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/app/app.locator.dart';
@@ -20,12 +23,19 @@ class EmergencyModeViewModel extends BaseViewModel {
   final _navigationService = locator<NavigationService>();
   final _languageService = locator<LanguageService>();
   final _emergencyActions = locator<EmergencyActionsService>();
+  final _sseService = locator<EmergencySseService>(); // NEW
+  final _apiService = locator<ApiService>(); // NEW (moved from local var)
 
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
   bool get isListening => _isListening;
 
-  // Reactive state
+  // ── NEW: SSE-driven resolution state ─────────────────────────────────────
+  EmergencyResolution? _resolution;
+  EmergencyResolution? get resolution => _resolution; // consumed by the view
+  StreamSubscription<EmergencyResolution>? _resolutionSub; // NEW
+
+  // ── Reactive state (UNCHANGED) ───────────────────────────────────────
   bool get isProcessing => _aiAssistant.isProcessing;
   List<ChatMessage> get messages => _aiAssistant.messages;
   String get currentStep => _aiAssistant.currentStep;
@@ -33,11 +43,14 @@ class EmergencyModeViewModel extends BaseViewModel {
   bool get isEmergencyActive => _aiAssistant.isEmergencyActive;
   bool get isSpeaking => _aiTts.isSpeaking;
 
-  // Emergency info
+  // ── Emergency info (UNCHANGED) ────────────────────────────────────────
   String _emergencyType = '';
   String _emergencyDescription = '';
   String? _userLocation;
   DateTime _emergencyStartTime = DateTime.now();
+  // NEW: cached IDs for SSE subscription
+  String? _emergencyId;
+  String? _companyId;
 
   String get emergencyType => _emergencyType;
   String get emergencyDescription => _emergencyDescription;
@@ -58,6 +71,9 @@ class EmergencyModeViewModel extends BaseViewModel {
     _speech.cancel();
     textController.dispose();
     _elapsedTimer?.cancel();
+    // NEW: clean up SSE
+    _resolutionSub?.cancel();
+    _sseService.disconnect();
     super.dispose();
   }
 
@@ -86,7 +102,7 @@ class EmergencyModeViewModel extends BaseViewModel {
 
     _emergencyType = emergencyType;
     _emergencyDescription = emergencyDescription ?? '';
-    
+
     double? reportLat;
     double? reportLng;
 
@@ -95,14 +111,15 @@ class EmergencyModeViewModel extends BaseViewModel {
     } else {
       final pos = _emergencyActions.lastKnownPosition;
       if (pos != null) {
-        _userLocation = '${pos.latitude.toStringAsFixed(6)}, ${pos.longitude.toStringAsFixed(6)}';
+        _userLocation =
+            '${pos.latitude.toStringAsFixed(6)}, ${pos.longitude.toStringAsFixed(6)}';
         reportLat = pos.latitude;
         reportLng = pos.longitude;
       } else {
         _userLocation = 'Position GPS en attente';
       }
     }
-    
+
     _emergencyStartTime = DateTime.now();
 
     // Start elapsed time counter
@@ -118,17 +135,23 @@ class EmergencyModeViewModel extends BaseViewModel {
       location: location,
     );
 
-    final _apiService = locator<ApiService>();
-
     // report to backend
     try {
-      await _apiService.reportEmergency(
+      final response = await _apiService.reportEmergency(
         type: emergencyType,
         severity: 'Critical',
         latitude: reportLat,
         longitude: reportLng,
         locationDescription: _userLocation,
       );
+      // NEW: capture IDs from the response to subscribe via SSE
+      if (response != null) {
+        _emergencyId = response['id'] as String?;
+        _companyId = response['company_id'] as String?;
+        if (_companyId != null) {
+          await _connectSse();
+        }
+      }
     } catch (e) {
       print(
           'Could not report to backend: $e'); // silent fail — emergency still works
@@ -153,6 +176,90 @@ class EmergencyModeViewModel extends BaseViewModel {
         }
       },
     );
+  }
+
+  // NEW: connect to the SSE stream and listen for EMERGENCY_RESOLVED events
+  Future<void> _connectSse() async {
+    try {
+      final token = await _apiService.getToken();
+      if (token == null || _companyId == null) return;
+
+      await _sseService.connect(_companyId!, token);
+
+      _resolutionSub = _sseService.resolutionStream.listen((resolution) {
+        // Only react to events targeting our specific emergency
+        if (_emergencyId != null && resolution.emergencyId != _emergencyId)
+          return;
+
+        _resolution = resolution;
+        notifyListeners(); // triggers _buildResolutionBanner in the view
+        print('[EmergencyModeViewModel] Resolution received: '
+            '${resolution.responderType} ETA=${resolution.etaMinutes}min');
+
+        // Trigger TTS to read the banner aloud
+        _speakResolutionBanner(resolution);
+      });
+    } catch (e) {
+      print('[EmergencyModeViewModel] SSE connect failed: $e'); // silent fail
+    }
+  }
+
+  Future<void> _speakResolutionBanner(EmergencyResolution resolution) async {
+    final langCode = _languageService.currentLanguage.code;
+
+    // The model's responderLabel includes emojis (e.g. "🚓 Police").
+    // TTS engines usually handle common emojis well, or we can just use the raw type.
+    // We'll strip the emoji by using the raw type translated, or relying on TTS fallback.
+    final responderMap = {
+      'police': {'fr': 'la police', 'ar': 'الشرطة', 'en': 'the police'},
+      'samu': {'fr': 'le SAMU', 'ar': 'الإسعاف', 'en': 'medical services'},
+      'fire': {
+        'fr': 'les pompiers',
+        'ar': 'الحماية المدنية',
+        'en': 'the fire department'
+      },
+      'other': {
+        'fr': 'les secours',
+        'ar': 'فرق الإنقاذ',
+        'en': 'emergency services'
+      },
+    };
+
+    final rawType = resolution.responderType ?? 'other';
+    final responderStr =
+        responderMap[rawType]?[langCode] ?? responderMap['other']![langCode]!;
+
+    String textToSpeak = '';
+
+    if (langCode == 'fr') {
+      textToSpeak =
+          'Les secours ont été confirmés. $responderStr est en route.';
+      if (resolution.etaMinutes != null) {
+        textToSpeak +=
+            ' Arrivée estimée dans ${resolution.etaMinutes} minutes.';
+      }
+      textToSpeak +=
+          ' Vous pouvez arrêter l\'urgence maintenant, ou continuer à parler avec l\'assistant.';
+    } else if (langCode == 'ar') {
+      textToSpeak = 'تم تأكيد طلب المساعدة. $responderStr في الطريق.';
+      if (resolution.etaMinutes != null) {
+        textToSpeak += ' الوقت المقدر للوصول ${resolution.etaMinutes} دقائق.';
+      }
+      textToSpeak +=
+          ' يمكنك إيقاف حالة الطوارئ الآن، أو متابعة التحدث مع المساعد.';
+    } else {
+      textToSpeak =
+          'Emergency services confirmed. $responderStr is on the way.';
+      if (resolution.etaMinutes != null) {
+        textToSpeak +=
+            ' Estimated arrival in ${resolution.etaMinutes} minutes.';
+      }
+      textToSpeak +=
+          ' You can stop the emergency now, or continue talking to the assistant.';
+    }
+
+    // Call the existing TTS provider without interrupting ongoing AI instructions
+    await _aiTts.speak(textToSpeak, urgent: true, interrupt: false);
   }
 
   Future<void> toggleListening() async {
@@ -237,13 +344,14 @@ class EmergencyModeViewModel extends BaseViewModel {
 
     // ✅ Language-aware confirmation
     final confirmation = {
-      'fr': "Envoi des alertes SMS et appel des secours en cours.",
-      'ar': "إرسال تنبيهات SMS والاتصال بخدمات الطوارئ جارٍ.",
-      'en': "Sending SMS alerts and calling emergency services.",
-    }[langCode] ?? "Sending SMS alerts and calling emergency services.";
+          'fr': "Envoi des alertes SMS et appel des secours en cours.",
+          'ar': "إرسال تنبيهات SMS والاتصال بخدمات الطوارئ جارٍ.",
+          'en': "Sending SMS alerts and calling emergency services.",
+        }[langCode] ??
+        "Sending SMS alerts and calling emergency services.";
 
     await _aiTts.speak(confirmation, urgent: true);
-  
+
     // Trigger full SOS: SMS to all contacts + auto-call first contact
     await _emergencyActions.triggerFullSOS(
       emergencyType: _emergencyType,
@@ -296,7 +404,8 @@ class EmergencyModeViewModel extends BaseViewModel {
       details: _emergencyDescription,
     );
 
-    await _historyService.addIncident(incident);
+    await _historyService
+        .addIncident(EmergencyHistory.fromSOSIncident(incident));
   }
 
   IncidentType _getIncidentType(String emergencyType) {

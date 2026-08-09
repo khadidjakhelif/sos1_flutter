@@ -108,8 +108,15 @@ class AITtsService with ListenableServiceMixin {
     await Future.delayed(const Duration(milliseconds: 100));
   }
 
-  Future<void> speak(String text, {bool urgent = false}) async {
+  Future<void> speak(String text, {bool urgent = false, bool interrupt = true}) async {
     if (text.isEmpty) return;
+
+    // Wait if we shouldn't interrupt the current speech
+    if (!interrupt) {
+      while (_isSpeaking.value) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    }
 
     // Force refresh language before each speak
     if (_languageService != null) {
@@ -117,7 +124,9 @@ class AITtsService with ListenableServiceMixin {
     }
 
     // Stop anything currently playing before changing language
-    await _flutterTts.stop();
+    if (interrupt) {
+      await _flutterTts.stop();
+    }
 
     _currentMessage.value = text;
 

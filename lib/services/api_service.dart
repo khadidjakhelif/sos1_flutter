@@ -4,7 +4,7 @@ import 'package:sos1/models/medical_profile.dart';
 
 class ApiService {
   static const String baseUrl =
-      'http://192.168.1.88:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
+      'http://10.252.67.57:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
   static const String _tokenKey = 'jwt_token';
   static const String _userKey = 'current_user';
 
@@ -69,7 +69,9 @@ class ApiService {
 
   // ── Emergency ─────────────────────────────────────────────────────────────
 
-  Future<void> reportEmergency({
+  // CHANGED: returns the created emergency data (id, company_id) so callers
+  // can set up SSE subscriptions. Still silently fails on network error.
+  Future<Map<String, dynamic>?> reportEmergency({
     required String type,
     required String severity,
     double? latitude,
@@ -113,6 +115,8 @@ class ApiService {
     });
     print(response.data);
     print('from the api ');
+    // Return the `data` sub-object so the viewmodel can read id + company_id
+    return response.data?['data'] as Map<String, dynamic>?;
   }
 
   Future<void> resolveEmergency(String emergencyId) async {
@@ -136,12 +140,41 @@ class ApiService {
     });
   }
 
+  Future<List<Map<String, dynamic>>> getEmergencyHistory() async {
+    return _handleRequest(() async {
+      final res =
+          await _dio.get('/emergencies', queryParameters: {'user_id': 'me'});
+      if (res.data['data'] != null && res.data['data']['items'] != null) {
+        return List<Map<String, dynamic>>.from(res.data['data']['items']);
+      }
+      return [];
+    });
+  }
+
   // ── Keep alive ────────────────────────────────────────────────────────────
 
   Future<void> updateLastSeen() async {
     try {
       await _dio.put('/users/last-seen');
     } catch (_) {} // silent fail
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  /// Executes [request] and returns its result.
+  /// Re-throws [DioException] so callers can handle HTTP errors,
+  /// while any other exception is also propagated.
+  Future<T> _handleRequest<T>(Future<T> Function() request) async {
+    try {
+      return await request();
+    } on DioException catch (e) {
+      print(
+          '_handleRequest DioError: ${e.response?.statusCode} — ${e.message}');
+      rethrow;
+    } catch (e) {
+      print('_handleRequest error: $e');
+      rethrow;
+    }
   }
 
   // ── Token management ──────────────────────────────────────────────────────

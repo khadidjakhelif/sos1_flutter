@@ -36,7 +36,8 @@ class MedicalProfileViewModel extends BaseViewModel {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           lp.translate('clear_profile_title'),
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          style:
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
         content: Text(
           lp.translate('clear_profile_message'),
@@ -70,7 +71,7 @@ class MedicalProfileViewModel extends BaseViewModel {
   }
 
   Future<void> editProfile() async {
-    _navigationService.navigateTo(Routes.editMedicalProfileView);
+    _navigationService.navigateTo(Routes.editProfileView);
   }
 
   void goBack() {

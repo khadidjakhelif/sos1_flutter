@@ -183,7 +183,7 @@ Respond in English, 1-2 sentences max per message.
     );
     _addMessage(welcomeMessage);
 
-    await _ttsService.speak(welcomeMessage.text, urgent: true);
+    await _ttsService.speak(welcomeMessage.text, urgent: true, interrupt: false);
     await Future.delayed(const Duration(seconds: 2));
 
     _processNextStep();
@@ -208,7 +208,7 @@ Respond in English, 1-2 sentences max per message.
         isImportant: true,
       );
       _addMessage(completeMessage);
-      await _ttsService.speak(completeMessage.text, urgent: true);
+      await _ttsService.speak(completeMessage.text, urgent: true, interrupt: false);
       return;
     }
 
@@ -230,7 +230,7 @@ Respond in English, 1-2 sentences max per message.
     );
     _addMessage(stepMessage);
 
-    await _ttsService.speak(stepMessage.text, urgent: true);
+    await _ttsService.speak(stepMessage.text, urgent: true, interrupt: false);
 
     _stepTimer = Timer(const Duration(seconds: 15), () {
       if (_isEmergencyActive.value) {
@@ -280,7 +280,7 @@ Respond in $langName.
         timestamp: DateTime.now(),
       );
       _addMessage(message);
-      await _ttsService.speak(aiResponse, urgent: true);
+      await _ttsService.speak(aiResponse, urgent: true, interrupt: false);
     } catch (e) {
       print('AI guidance error: $e');
       final fallback = _getFallbackResponse(emergencyType);
@@ -290,7 +290,7 @@ Respond in $langName.
         timestamp: DateTime.now(),
       );
       _addMessage(message);
-      await _ttsService.speak(fallback, urgent: true);
+      await _ttsService.speak(fallback, urgent: true, interrupt: false);
     }
 
     _isProcessing.value = false;
@@ -342,7 +342,7 @@ Respond in $langName.
         timestamp: DateTime.now(),
       );
       _addMessage(aiMessage);
-      await _ttsService.speak(aiResponse, urgent: true);
+      await _ttsService.speak(aiResponse, urgent: true, interrupt: false);
     } catch (e) {
       print('AI response error: $e');
     }
@@ -384,7 +384,7 @@ Respond in $langName.
     if (_currentStep.value.isNotEmpty && !_ttsService.isSpeaking) {
       final langCode = _languageService?.getLanguageCode() ?? 'fr';
       final prefix = {'fr': 'Je répète', 'ar': 'أعيد', 'en': 'Repeating'}[langCode] ?? 'Je répète';
-      await _ttsService.speak('$prefix: ${_currentStep.value}', urgent: true);
+      await _ttsService.speak('$prefix: ${_currentStep.value}', urgent: true, interrupt: false);
     }
   }
 
@@ -408,7 +408,7 @@ Respond in $langName.
       isImportant: true,
     );
     _addMessage(endMessage);
-    await _ttsService.speak(endMessage.text);
+    await _ttsService.speak(endMessage.text, interrupt: false);
 
     notifyListeners();
     _startNewSession();

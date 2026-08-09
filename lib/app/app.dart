@@ -1,3 +1,6 @@
+import 'package:sos1/services/api_service.dart';
+import 'package:sos1/services/emergency_actions_service.dart';
+import 'package:sos1/services/emergency_sse_service.dart';
 import 'package:sos1/ui/views/legal/privacy_policy/privacy_screen_view.dart';
 import 'package:sos1/ui/views/legal/terms_of_use/terms_of_use_view.dart';
 import 'package:stacked/stacked_annotations.dart';
@@ -42,13 +45,14 @@ import '../utils/app_language_provider.dart';
     LazySingleton(classType: SpeechRecognitionService),
     LazySingleton(classType: TextToSpeechService),
     LazySingleton(classType: AITtsService),
-    LazySingleton(classType: AISpeechService),
-    LazySingleton(classType: AIEmergencyAssistant),
     LazySingleton(classType: ContactsService),
     LazySingleton(classType: MedicalProfileService),
     LazySingleton(classType: SOSHistoryService),
     LazySingleton(classType: LanguageService),
     LazySingleton(classType: LanguageProvider),
+    LazySingleton(classType: ApiService),
+    LazySingleton(classType: EmergencyActionsService),
+    LazySingleton(classType: EmergencySseService),
   ],
 )
 class App {}

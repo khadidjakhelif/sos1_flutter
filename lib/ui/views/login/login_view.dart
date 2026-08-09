@@ -36,7 +36,8 @@ class _LoginViewState extends State<LoginView> {
     if (_employeeIdController.text.isEmpty ||
         _passwordController.text.isEmpty ||
         _companyCodeController.text.isEmpty) {
-      setState(() => _errorMessage = 'Veuillez remplir tous les champs obligatoires.');
+      setState(() =>
+          _errorMessage = 'Veuillez remplir tous les champs obligatoires.');
       return;
     }
 
@@ -46,7 +47,8 @@ class _LoginViewState extends State<LoginView> {
     }
 
     if (_passwordController.text.length < 6) {
-      setState(() => _errorMessage = 'Le mot de passe doit contenir au moins 6 caractères.');
+      setState(() => _errorMessage =
+          'Le mot de passe doit contenir au moins 6 caractères.');
       return;
     }
 
@@ -72,16 +74,19 @@ class _LoginViewState extends State<LoginView> {
         );
       }
       // Navigate to main app
-      _navigationService.clearStackAndShowView(Routes.voiceAssistantView);
+      _navigationService.clearStackAndShow(Routes.voiceAssistantView);
     } on DioException catch (e) {
       setState(() {
         final data = e.response?.data;
         if (data is Map) {
           if (data['detail'] is List) {
             final firstError = data['detail'][0];
-            _errorMessage = 'Erreur de saisie: ${firstError['loc'].last} - ${firstError['msg']}';
+            _errorMessage =
+                'Erreur de saisie: ${firstError['loc'].last} - ${firstError['msg']}';
           } else {
-            _errorMessage = data['message'] ?? data['detail']?.toString() ?? 'Erreur de connexion.';
+            _errorMessage = data['message'] ??
+                data['detail']?.toString() ??
+                'Erreur de connexion.';
           }
         } else {
           _errorMessage = 'Erreur de connexion. Vérifiez votre réseau.';
@@ -101,145 +106,148 @@ class _LoginViewState extends State<LoginView> {
       builder: (context, lp, _) => PopScope(
         canPop: false, // Prevent back button from bypassing login
         child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 28.w),
-            child: Column(
-              children: [
-                SizedBox(height: 60.h),
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 28.w),
+              child: Column(
+                children: [
+                  SizedBox(height: 60.h),
 
-                // Logo
-                Icon(Icons.emergency, color: AppColors.primaryRed, size: 64.sp),
-                SizedBox(height: 16.h),
-                Text('SOS ALGÉRIE',
-                    style: TextStyle(
-                        fontSize: 28.sp,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryRed,
-                        letterSpacing: 3)),
-                SizedBox(height: 8.h),
-                Text('Système de gestion des urgences',
-                    style:
-                        TextStyle(fontSize: 13.sp, color: AppColors.textMuted)),
-
-                SizedBox(height: 48.h),
-
-                // Toggle Login/Register
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Row(
-                    children: [
-                      _buildToggleButton('Connexion', _isLoginMode, () {
-                        setState(() {
-                          _isLoginMode = true;
-                          _errorMessage = null;
-                        });
-                      }),
-                      _buildToggleButton('Inscription', !_isLoginMode, () {
-                        setState(() {
-                          _isLoginMode = false;
-                          _errorMessage = null;
-                        });
-                      }),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: 32.h),
-
-                // Register-only fields
-                if (!_isLoginMode) ...[
-                  _buildField(_fullNameController, 'Nom complet', Icons.person),
+                  // Logo
+                  Icon(Icons.emergency,
+                      color: AppColors.primaryRed, size: 64.sp),
                   SizedBox(height: 16.h),
-                  _buildField(_phoneController, 'Téléphone', Icons.phone,
-                      keyboardType: TextInputType.phone),
-                  SizedBox(height: 16.h),
-                ],
+                  Text('EchoAlert',
+                      style: TextStyle(
+                          fontSize: 28.sp,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryRed,
+                          letterSpacing: 3)),
+                  SizedBox(height: 8.h),
+                  Text('Système de gestion des urgences',
+                      style: TextStyle(
+                          fontSize: 13.sp, color: AppColors.textMuted)),
 
-                // Common fields
-                _buildField(
-                    _employeeIdController, 'Matricule employé', Icons.badge),
-                SizedBox(height: 16.h),
-                _buildField(
-                    _companyCodeController, 'Code entreprise', Icons.business,
-                    hint: 'Ex: SONATRACH-2024'),
-                SizedBox(height: 16.h),
-                _buildPasswordField(),
+                  SizedBox(height: 48.h),
 
-                // Error message
-                if (_errorMessage != null) ...[
-                  SizedBox(height: 16.h),
+                  // Toggle Login/Register
                   Container(
-                    padding: EdgeInsets.all(12.w),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(12.r),
-                      border:
-                          Border.all(color: AppColors.error.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline,
-                            color: AppColors.error, size: 18.sp),
-                        SizedBox(width: 8.w),
-                        Expanded(
-                            child: Text(_errorMessage!,
+                        _buildToggleButton('Connexion', _isLoginMode, () {
+                          setState(() {
+                            _isLoginMode = true;
+                            _errorMessage = null;
+                          });
+                        }),
+                        _buildToggleButton('Inscription', !_isLoginMode, () {
+                          setState(() {
+                            _isLoginMode = false;
+                            _errorMessage = null;
+                          });
+                        }),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: 32.h),
+
+                  // Register-only fields
+                  if (!_isLoginMode) ...[
+                    _buildField(
+                        _fullNameController, 'Nom complet', Icons.person),
+                    SizedBox(height: 16.h),
+                    _buildField(_phoneController, 'Téléphone', Icons.phone,
+                        keyboardType: TextInputType.phone),
+                    SizedBox(height: 16.h),
+                  ],
+
+                  // Common fields
+                  _buildField(
+                      _employeeIdController, 'Matricule employé', Icons.badge),
+                  SizedBox(height: 16.h),
+                  _buildField(
+                      _companyCodeController, 'Code entreprise', Icons.business,
+                      hint: 'Ex: SONATRACH-2024'),
+                  SizedBox(height: 16.h),
+                  _buildPasswordField(),
+
+                  // Error message
+                  if (_errorMessage != null) ...[
+                    SizedBox(height: 16.h),
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border:
+                            Border.all(color: AppColors.error.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline,
+                              color: AppColors.error, size: 18.sp),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                              child: Text(_errorMessage!,
+                                  style: TextStyle(
+                                      color: AppColors.error,
+                                      fontSize: 13.sp))),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  SizedBox(height: 32.h),
+
+                  // Submit button
+                  GestureDetector(
+                    onTap: _isLoading ? null : _submit,
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(vertical: 18.h),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                            colors: AppColors.redGradient,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight),
+                        borderRadius: BorderRadius.circular(16.r),
+                        boxShadow: [
+                          BoxShadow(
+                              color: AppColors.primaryRed.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4))
+                        ],
+                      ),
+                      child: Center(
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2))
+                            : Text(
+                                _isLoginMode
+                                    ? 'Se connecter'
+                                    : 'Créer mon compte',
                                 style: TextStyle(
-                                    color: AppColors.error, fontSize: 13.sp))),
-                      ],
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white)),
+                      ),
                     ),
                   ),
+
+                  SizedBox(height: 40.h),
                 ],
-
-                SizedBox(height: 32.h),
-
-                // Submit button
-                GestureDetector(
-                  onTap: _isLoading ? null : _submit,
-                  child: Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(vertical: 18.h),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: AppColors.redGradient,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight),
-                      borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: [
-                        BoxShadow(
-                            color: AppColors.primaryRed.withOpacity(0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4))
-                      ],
-                    ),
-                    child: Center(
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2))
-                          : Text(
-                              _isLoginMode
-                                  ? 'Se connecter'
-                                  : 'Créer mon compte',
-                              style: TextStyle(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white)),
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 40.h),
-              ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );

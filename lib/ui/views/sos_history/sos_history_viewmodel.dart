@@ -2,13 +2,13 @@ import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/app/app.locator.dart';
 import 'package:sos1/services/sos_history_service.dart';
-import 'package:sos1/models/sos_incident.dart';
+import 'package:sos1/models/emergency_history.dart';
 
 class SOSHistoryViewModel extends BaseViewModel {
   final _historyService = locator<SOSHistoryService>();
   final _navigationService = locator<NavigationService>();
 
-  List<SOSIncident> get incidents => _historyService.filteredIncidents;
+  List<EmergencyHistory> get incidents => _historyService.filteredIncidents;
   IncidentTab get selectedTab => _historyService.selectedTab;
 
   final List<IncidentTab> tabs = [
