@@ -8,6 +8,8 @@ import '../../../services/api_service.dart';
 import '../../../app/app.locator.dart';
 import '../../../app/app.router.dart';
 import 'package:stacked_services/stacked_services.dart';
+import 'package:hive/hive.dart';
+import '../../../models/medical_profile.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -58,14 +60,15 @@ class _LoginViewState extends State<LoginView> {
     });
 
     try {
+      Map<String, dynamic> resultData;
       if (_isLoginMode) {
-        await _apiService.login(
+        resultData = await _apiService.login(
           employeeId: _employeeIdController.text.trim(),
           password: _passwordController.text,
           companyCode: _companyCodeController.text.trim(),
         );
       } else {
-        await _apiService.register(
+        resultData = await _apiService.register(
           fullName: _fullNameController.text.trim(),
           employeeId: _employeeIdController.text.trim(),
           password: _passwordController.text,
@@ -73,6 +76,18 @@ class _LoginViewState extends State<LoginView> {
           companyCode: _companyCodeController.text.trim(),
         );
       }
+// NEW: if the response includes an existing medical profile, cache it locally
+      final user = resultData['user'];
+      final medicalProfileJson = user?['medical_profile'];
+      if (medicalProfileJson != null) {
+        final profile = MedicalProfile.fromJson(
+          medicalProfileJson,
+          fullName: user['full_name'] ?? '',
+        );
+        final box = Hive.box<MedicalProfile>('medicalProfile');
+        await box.put('profile', profile);
+      }
+
       // Navigate to main app
       _navigationService.clearStackAndShow(Routes.voiceAssistantView);
     } on DioException catch (e) {

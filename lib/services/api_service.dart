@@ -45,8 +45,10 @@ class ApiService {
       'password': password,
       'company_code': companyCode.toUpperCase(),
     });
-    await _saveToken(response.data['data']['access_token']);
-    return response.data['data'];
+    final data = response.data['data'];
+    await _saveToken(data['access_token']);
+    await _saveUserId(data['user']['id']);
+    return data;
   }
 
   Future<Map<String, dynamic>> register({
@@ -64,6 +66,7 @@ class ApiService {
       'company_code': companyCode.toUpperCase(),
     });
     await _saveToken(response.data['data']['access_token']);
+    await _saveUserId(response.data['data']['id']);
     return response.data['data'];
   }
 
@@ -140,6 +143,16 @@ class ApiService {
     });
   }
 
+  Future<Map<String, dynamic>?> getMedicalProfile(String userId) async {
+    try {
+      final res = await _dio.get('/medical/$userId');
+      return res.data?['data'] as Map<String, dynamic>?;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getEmergencyHistory() async {
     return _handleRequest(() async {
       final res =
@@ -187,6 +200,16 @@ class ApiService {
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
+  }
+
+  Future<void> _saveUserId(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_id', userId);
+  }
+
+  Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_id');
   }
 
   Future<void> logout() async {

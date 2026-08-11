@@ -19,10 +19,22 @@ class MedicalProfileService with ListenableServiceMixin {
     final saved = box.get(_profileKey);
 
     if (saved != null) {
-      // Existing user — load saved data
       _profile.value = saved;
+    } else {
+      try {
+        final userId = await _apiService.getUserId();
+        if (userId != null) {
+          final remote = await _apiService.getMedicalProfile(userId);
+          if (remote != null) {
+            final profile = MedicalProfile.fromJson(remote);
+            await box.put(_profileKey, profile);
+            _profile.value = profile;
+          }
+        }
+      } catch (e) {
+        print('Failed to fetch remote medical profile: $e');
+      }
     }
-    // If null → profile stays null, UI should prompt user to fill in their info
     notifyListeners();
   }
 
