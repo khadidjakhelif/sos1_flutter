@@ -29,27 +29,160 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
       body: SafeArea(
         child: Column(
           children: [
-            // Emergency Header (UNCHANGED)
+            // Emergency Header
             _buildEmergencyHeader(viewModel),
 
-            // NEW: Resolution banner — shown when officer resolves from dashboard
+            // Dispatch failure banner (shown after all retries fail)
+            if (viewModel.reportStatus == EmergencyReportStatus.failed)
+              _buildDispatchFailureBanner(),
+
+            // Auto-call countdown (shown only while countdown is running)
+            if (viewModel.countdownSeconds != null)
+              _buildAutoCallCountdown(viewModel),
+
+            // Resolution banner — shown when officer resolves from dashboard
             if (viewModel.resolution != null)
               _buildResolutionBanner(viewModel),
 
-            // Chat Messages (UNCHANGED)
+            // Chat Messages
             Expanded(
               child: _buildChatArea(viewModel),
             ),
 
-            // Quick Actions (UNCHANGED)
+            // Quick Actions
             _buildQuickActions(viewModel),
 
-            // Input Area (UNCHANGED)
+            // Input Area
             _buildInputArea(viewModel),
           ],
         ),
       ),
     );
+  }
+
+  // ── Dispatch failure banner ─────────────────────────────────────────────
+  Widget _buildDispatchFailureBanner() {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3E1A00),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: const Color(0xFFFF6D00), width: 1.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.cloud_off, color: const Color(0xFFFF6D00), size: 20.sp),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'DISPATCH INJOIGNABLE',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFFFF6D00),
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  "Serveur non joignable après 3 tentatives. "
+                  "Suivez les instructions de l'assistant. "
+                  "Appel des secours automatique en cours...",
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.orange.shade200,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    )
+        .animate()
+        .slideY(begin: -0.3, end: 0, duration: 350.ms, curve: Curves.easeOut)
+        .fadeIn(duration: 300.ms);
+  }
+
+  // ── Auto-call countdown widget ─────────────────────────────────────────
+  Widget _buildAutoCallCountdown(EmergencyModeViewModel viewModel) {
+    final seconds = viewModel.countdownSeconds!;
+    final number = viewModel.pendingCallNumber ?? '14';
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A0000),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: const Color(0xFFE53935), width: 1.5),
+      ),
+      child: Row(
+        children: [
+          // Countdown circle
+          Container(
+            width: 44.w,
+            height: 44.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFE53935), width: 2),
+            ),
+            child: Center(
+              child: Text(
+                '$seconds',
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFFE53935),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(
+              'Appel du $number dans $seconds s...',
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          // Cancel button
+          GestureDetector(
+            onTap: viewModel.cancelCountdown,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20.r),
+                border: Border.all(color: Colors.white30),
+              ),
+              child: Text(
+                'ANNULER',
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    )
+        .animate(onPlay: (c) => c.repeat())
+        .shimmer(duration: 1000.ms, color: Colors.red.withOpacity(0.15));
   }
 
   // NEW: resolution banner displayed when the safety officer resolves the emergency

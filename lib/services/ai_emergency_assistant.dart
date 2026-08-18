@@ -195,11 +195,14 @@ Respond in English, 1-2 sentences max per message.
     final langCode = _languageService?.getLanguageCode() ?? 'fr';
 
     if (_activeProtocol == null || _currentStepIndex.value >= _activeProtocol!.steps.length) {
-      final completeText = {
-        'fr': 'Protocole terminé. Les secours sont en route. Continuez à surveiller la victime.',
-        'ar': 'انتهى البروتوكول. فرق الإنقاذ في الطريق. استمر في مراقبة الضحية.',
-        'en': 'Protocol complete. Emergency services are on the way. Keep monitoring the victim.',
-      }[langCode] ?? 'Protocole terminé.';
+      // NOTE: Do NOT claim services are on the way here — the backend dispatch
+    // result is unknown at this point. Only the SSE resolution banner in the
+    // viewmodel may confirm that the dashboard has been alerted.
+    final completeText = {
+      'fr': 'Protocole terminé. Continuez à surveiller la victime jusqu\'à l\'arrivée des secours.',
+      'ar': 'انتهى البروتوكول. استمر في مراقبة الضحية حتى وصول فريق الإنقاذ.',
+      'en': 'Protocol complete. Keep monitoring the victim until help arrives.',
+    }[langCode] ?? 'Protocole terminé. Continuez à surveiller la victime.';
 
       final completeMessage = ChatMessage(
         isUser: false,
@@ -395,10 +398,12 @@ Respond in $langName.
     _activeProtocol = null;
 
     final langCode = _languageService?.getLanguageCode() ?? 'fr';
+    // NOTE: Do NOT claim help has arrived — the session may be ended before
+    // any responders have actually been dispatched or confirmed.
     final endText = {
-      'fr': "Session d'urgence terminée. Les secours sont arrivés. Prenez soin de vous.",
-      'ar': "انتهت الجلسة. وصلت فرق الإنقاذ. اعتنِ بنفسك.",
-      'en': "Emergency session ended. Help has arrived. Take care of yourself.",
+      'fr': "Session d'urgence terminée. Restez vigilant et contactez les secours si nécessaire.",
+      'ar': "انتهت الجلسة. ابقَ متيقظاً واتصل بالطوارئ إذا لزم.",
+      'en': "Emergency session ended. Stay alert and contact emergency services if needed.",
     }[langCode] ?? "Session d'urgence terminée.";
 
     final endMessage = ChatMessage(

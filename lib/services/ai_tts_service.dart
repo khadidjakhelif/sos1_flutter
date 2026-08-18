@@ -154,7 +154,7 @@ class AITtsService with ListenableServiceMixin {
     await speak(message, urgent: urgent);
   }
 
-  /// Protocol speech — UNCHANGED
+  /// Protocol speech
   Future<void> speakEmergencyGuidance(EmergencyProtocol protocol) async {
     final steps = protocol.steps;
     await speak(
@@ -167,8 +167,11 @@ class AITtsService with ListenableServiceMixin {
       await speak("Étape ${i + 1}: $step", urgent: true);
       await Future.delayed(const Duration(seconds: 5));
     }
+    // NOTE: Do NOT claim help has been alerted here — dispatch status is
+    // unknown at this point. The SSE resolution banner is the only place
+    // that confirms a dashboard alert.
     await speak(
-      "Les secours ont été alertés. Restez calme et suivez les instructions.",
+      "Protocole terminé. Continuez à surveiller la victime jusqu'à l'arrivée des secours.",
       urgent: true,
     );
   }
@@ -262,37 +265,40 @@ $instructions
 ''';
   }
 
-  /// UNCHANGED except now multilingual
+  /// Fallback responses when AI generation fails.
+  /// IMPORTANT: These must NEVER claim that help has been alerted or
+  /// is on the way — dispatch status is unknown at this point.
+  /// Only the SSE resolution banner (in the viewmodel) may confirm that.
   String _getFallbackResponse(String emergencyType, String langCode) {
     final responses = {
       'fr': {
-        'cardiac': 'Arrêt cardiaque détecté. Commencez les compressions thoraciques immédiatement. Les secours sont en route.',
+        'cardiac': 'Arrêt cardiaque détecté. Commencez les compressions thoraciques immédiatement. Appelez le 15.',
         'bleeding': 'Saignement détecté. Appliquez une pression directe sur la plaie. Gardez la personne allongée.',
-        'choking': 'Étouffement détecté. Encouragez la toux si possible. Les secours arrivent.',
-        'medical': 'Urgence médicale détectée. Restez calme, ne déplacez pas la victime. Les secours sont alertés.',
-        'fire': 'Incendie détecté. Évacuez immédiatement le bâtiment. Ne prenez pas l\'ascenseur.',
-        'police': 'Urgence sécurité détectée. Mettez-vous en sécurité. La police est alertée.',
+        'choking': 'Étouffement détecté. Encouragez la toux si possible. Faites la manœuvre de Heimlich si nécessaire.',
+        'medical': 'Urgence médicale détectée. Restez calme, ne déplacez pas la victime. Appelez le 15.',
+        'fire': 'Incendie détecté. Évacuez immédiatement le bâtiment par les escaliers. N\'utilisez pas l\'ascenseur.',
+        'police': 'Urgence sécurité détectée. Mettez-vous en sécurité immédiatement. Appelez le 17.',
       },
       'ar': {
-        'cardiac': 'توقف قلبي. ابدأ ضغطات الصدر فوراً. المساعدة في الطريق.',
+        'cardiac': 'توقف قلبي. ابدأ ضغطات الصدر فوراً. اتصل بـ 15.',
         'bleeding': 'نزيف. اضغط على الجرح مباشرة. أبقِ الشخص مستلقياً.',
-        'choking': 'اختناق. شجع السعال إن أمكن. المساعدة قادمة.',
-        'medical': 'طوارئ طبية. اهدأ، لا تحرك الضحية. تم تنبيه المساعدة.',
-        'fire': 'حريق. اخرج فوراً. لا تستخدم المصعد.',
-        'police': 'طوارئ أمنية. تأمن. الشرطة في الطريق.',
+        'choking': 'اختناق. شجع السعال إن أمكن. قم بمناورة هيمليك إذا لزم.',
+        'medical': 'طوارئ طبية. اهدأ، لا تحرك الضحية. اتصل بـ 15.',
+        'fire': 'حريق. اخرج فوراً بالدرج. لا تستخدم المصعد.',
+        'police': 'طوارئ أمنية. تأمن فوراً. اتصل بـ 17.',
       },
       'en': {
-        'cardiac': 'Cardiac arrest detected. Start chest compressions immediately. Help is on the way.',
+        'cardiac': 'Cardiac arrest detected. Start chest compressions immediately. Call 15.',
         'bleeding': 'Bleeding detected. Apply direct pressure to the wound. Keep the person lying down.',
-        'choking': 'Choking detected. Encourage coughing if possible. Help is coming.',
-        'medical': 'Medical emergency detected. Stay calm, do not move the victim. Help has been alerted.',
-        'fire': 'Fire detected. Evacuate the building immediately. Do not use the elevator.',
-        'police': 'Security emergency detected. Get to safety. Police have been alerted.',
+        'choking': 'Choking detected. Encourage coughing if possible. Perform the Heimlich maneuver if needed.',
+        'medical': 'Medical emergency detected. Stay calm, do not move the victim. Call 15.',
+        'fire': 'Fire detected. Evacuate immediately using the stairs. Do not use the elevator.',
+        'police': 'Security emergency detected. Get to safety immediately. Call 17.',
       },
     };
     return responses[langCode]?[emergencyType.toLowerCase()]
         ?? responses['fr']![emergencyType.toLowerCase()]
-        ?? 'Urgence détectée. Restez calme, les secours sont en route.';
+        ?? 'Urgence détectée. Restez calme et appelez le 15.';
   }
 
   Future<void> stop() async {

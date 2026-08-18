@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:sos1/models/emergency_history.dart';
-import 'package:sos1/models/emergency_resolution.dart'; // NEW
+import 'package:sos1/models/emergency_resolution.dart';
 import 'package:sos1/models/language.dart';
 import 'package:sos1/services/api_service.dart';
-import 'package:sos1/services/emergency_sse_service.dart'; // NEW
+import 'package:sos1/services/emergency_sse_service.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/app/app.locator.dart';
@@ -15,6 +15,10 @@ import 'package:sos1/services/sos_history_service.dart';
 import 'package:sos1/models/sos_incident.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:sos1/services/emergency_actions_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+/// Dispatch status exposed to the view via [EmergencyModeViewModel.reportStatus].
+enum EmergencyReportStatus { pending, success, failed }
 
 class EmergencyModeViewModel extends BaseViewModel {
   final _aiAssistant = locator<AIEmergencyAssistant>();
@@ -61,6 +65,20 @@ class EmergencyModeViewModel extends BaseViewModel {
       ReactiveValue<Duration>(Duration.zero);
   Duration get elapsedTime => _elapsedTime.value;
 
+  // ── Dispatch status (retry-with-backoff) ─────────────────────────────────
+  final ReactiveValue<EmergencyReportStatus> _reportStatus =
+      ReactiveValue<EmergencyReportStatus>(EmergencyReportStatus.pending);
+  EmergencyReportStatus get reportStatus => _reportStatus.value;
+
+  // ── Auto-call countdown (shown when dispatch fails) ───────────────────────
+  Timer? _countdownTimer;
+  final ReactiveValue<int?> _countdownSeconds = ReactiveValue<int?>(null);
+  /// Non-null while the auto-call countdown is running (value = seconds left).
+  int? get countdownSeconds => _countdownSeconds.value;
+  /// The emergency number the countdown will dial.
+  String? _pendingCallNumber;
+  String? get pendingCallNumber => _pendingCallNumber;
+
   final TextEditingController textController = TextEditingController();
 
   String get currentLanguage => _languageService.currentLanguage.displayName;
@@ -71,7 +89,7 @@ class EmergencyModeViewModel extends BaseViewModel {
     _speech.cancel();
     textController.dispose();
     _elapsedTimer?.cancel();
-    // NEW: clean up SSE
+    _countdownTimer?.cancel();
     _resolutionSub?.cancel();
     _sseService.disconnect();
     super.dispose();
@@ -135,29 +153,94 @@ class EmergencyModeViewModel extends BaseViewModel {
       location: location,
     );
 
-    // report to backend
-    try {
-      final response = await _apiService.reportEmergency(
-        type: emergencyType,
-        severity: 'Critical',
-        latitude: reportLat,
-        longitude: reportLng,
-        locationDescription: _userLocation,
-      );
-      // NEW: capture IDs from the response to subscribe via SSE
-      if (response != null) {
-        _emergencyId = response['id'] as String?;
-        _companyId = response['company_id'] as String?;
-        if (_companyId != null) {
-          await _connectSse();
-        }
-      }
-    } catch (e) {
-      print(
-          'Could not report to backend: $e'); // silent fail — emergency still works
-    }
+    // Report to backend — retry with exponential backoff (2 s → 4 s → 8 s)
+    await _reportWithRetry(
+      emergencyType: emergencyType,
+      reportLat: reportLat,
+      reportLng: reportLng,
+    );
 
     setBusy(false);
+  }
+
+  // ── Retry-with-backoff ────────────────────────────────────────────────────
+  Future<void> _reportWithRetry({
+    required String emergencyType,
+    double? reportLat,
+    double? reportLng,
+  }) async {
+    const maxAttempts = 3;
+    final delays = [2, 4, 8]; // seconds
+
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        final response = await _apiService.reportEmergency(
+          type: emergencyType,
+          severity: 'Critical',
+          latitude: reportLat,
+          longitude: reportLng,
+          locationDescription: _userLocation,
+        );
+        // Success — capture IDs and connect SSE
+        if (response != null) {
+          _emergencyId = response['id'] as String?;
+          _companyId = response['company_id'] as String?;
+          if (_companyId != null) await _connectSse();
+        }
+        _reportStatus.value = EmergencyReportStatus.success;
+        notifyListeners();
+        return;
+      } catch (e) {
+        print('[Dispatch] Attempt ${attempt + 1} failed: $e');
+        if (attempt < maxAttempts - 1) {
+          await Future.delayed(Duration(seconds: delays[attempt]));
+        }
+      }
+    }
+
+    // All retries exhausted — go offline-first + auto-call
+    _reportStatus.value = EmergencyReportStatus.failed;
+    notifyListeners();
+    _startAutoCallCountdown(emergencyType);
+  }
+
+  /// Starts a 3-second visible countdown; on expiry opens the phone dialler.
+  void _startAutoCallCountdown(String emergencyType) {
+    _pendingCallNumber = _getEmergencyNumber(emergencyType);
+    _countdownSeconds.value = 3;
+    notifyListeners();
+
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
+      final current = _countdownSeconds.value;
+      if (current == null || current <= 1) {
+        t.cancel();
+        _countdownSeconds.value = null;
+        notifyListeners();
+        await _dialNumber(_pendingCallNumber!);
+      } else {
+        _countdownSeconds.value = current - 1;
+        notifyListeners();
+      }
+    });
+  }
+
+  /// Cancels the auto-call countdown without placing the call.
+  void cancelCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+    _countdownSeconds.value = null;
+    _pendingCallNumber = null;
+    notifyListeners();
+  }
+
+  /// Opens the phone dialler pre-filled with [number] (does NOT auto-dial).
+  Future<void> _dialNumber(String number) async {
+    final uri = Uri(scheme: 'tel', path: number);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      print('[Dispatch] Could not open dialler for $number');
+    }
   }
 
   Future<void> _initSpeech() async {
@@ -320,15 +403,15 @@ class EmergencyModeViewModel extends BaseViewModel {
 
   String _getEmergencyNumber(String type) {
     final numbers = {
-      'cardiac': '15',
-      'medical': '15',
-      'bleeding': '15',
-      'choking': '15',
-      'unconscious': '15',
+      'cardiac': '14',
+      'medical': '14',
+      'bleeding': '14',
+      'choking': '14',
+      'unconscious': '14',
       'fire': '14',
       'police': '17',
     };
-    return numbers[type.toLowerCase()] ?? '15';
+    return numbers[type.toLowerCase()] ?? '14';
   }
 
   Future<void> nextStep() async {

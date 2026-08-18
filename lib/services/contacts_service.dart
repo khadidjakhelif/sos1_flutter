@@ -36,8 +36,8 @@ class ContactsService with ListenableServiceMixin {
       PublicService(
         id: 'samu',
         name: 'SAMU',
-        shortNumber: '115',
-        fullNumber: '3030',
+        shortNumber: '14',
+        fullNumber: '021 23 26 26',
         type: ServiceType.medical,
         iconAsset: 'medical',
       ),

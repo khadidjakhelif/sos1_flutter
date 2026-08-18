@@ -216,6 +216,10 @@ class VoiceAssistantViewModel extends BaseViewModel {
     _navigationService.navigateTo(Routes.settingsView);
   }
 
+  void navigateToLanguageSelection() {
+    _navigationService.navigateTo(Routes.languageSelectionView);
+  }
+
   @override
   void dispose() {
     _intentSubscription?.cancel();

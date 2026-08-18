@@ -4,7 +4,7 @@ import 'package:sos1/models/medical_profile.dart';
 
 class ApiService {
   static const String baseUrl =
-      'http://10.252.67.57:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
+      'http://192.168.1.64:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
   static const String _tokenKey = 'jwt_token';
   static const String _userKey = 'current_user';
 
@@ -65,9 +65,10 @@ class ApiService {
       'phone': phone,
       'company_code': companyCode.toUpperCase(),
     });
-    await _saveToken(response.data['data']['access_token']);
-    await _saveUserId(response.data['data']['id']);
-    return response.data['data'];
+    final data = response.data['data'];
+    await _saveToken(data['access_token']);
+    await _saveUserId(data['user']['id']);
+    return data;
   }
 
   // ── Emergency ─────────────────────────────────────────────────────────────
