@@ -3,10 +3,14 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/app/app.locator.dart';
 import 'package:sos1/app/app.router.dart';
 import 'package:sos1/services/api_service.dart';
+import 'package:sos1/services/medical_profile_service.dart';
+import 'package:sos1/services/sos_history_service.dart';
 
 class SettingsViewModel extends BaseViewModel {
   final _navigationService = locator<NavigationService>();
   final _apiService = locator<ApiService>();
+  final _medicalProfileService = locator<MedicalProfileService>();
+  final _sosHistoryService = locator<SOSHistoryService>();
 
   String get appVersion => 'v1.0.0';
   String get emergencyNumber => '14 / 17';
@@ -48,6 +52,8 @@ class SettingsViewModel extends BaseViewModel {
 
   Future<void> logout() async {
     setBusy(true);
+    await _medicalProfileService.clearProfile();
+    await _sosHistoryService.clearHistory();
     await _apiService.logout();
     setBusy(false);
     _navigationService.clearStackAndShow(Routes.loginView);

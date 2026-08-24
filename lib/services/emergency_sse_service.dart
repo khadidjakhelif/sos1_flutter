@@ -1,4 +1,4 @@
-﻿// NEW file — dart:io chunked SSE client for the worker app.
+// NEW file — dart:io chunked SSE client for the worker app.
 // Opens GET /events/stream?company_id=…&token=… and emits
 // EmergencyResolution objects when EMERGENCY_RESOLVED events arrive.
 // No pub.dev dependencies — uses dart:io HttpClient only.
@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:sos1/models/emergency_resolution.dart';
+import 'package:sos1/models/ping_event.dart'; // NEW
 import 'package:sos1/services/api_service.dart';
 
 class EmergencySseService {
@@ -17,6 +18,8 @@ class EmergencySseService {
   HttpClient? _httpClient;
   HttpClientRequest? _request;
   StreamController<EmergencyResolution>? _controller;
+  StreamController<PingEvent>? _pingController; // NEW
+  StreamController<String>? _startedController; // NEW: ordinary worker
   StreamSubscription<String>? _lineSub;
   bool _connected = false;
 
@@ -24,6 +27,13 @@ class EmergencySseService {
   /// The view-model subscribes to this after reporting the emergency.
   Stream<EmergencyResolution> get resolutionStream =>
       _controller?.stream ?? const Stream.empty();
+
+  Stream<PingEvent> get pingSentStream =>
+      _pingController?.stream ?? const Stream.empty();
+
+  /// NEW: Stream of ANY emergency starting in the company (emits ID).
+  Stream<String> get emergencyStartedStream =>
+      _startedController?.stream ?? const Stream.empty();
 
   bool get isConnected => _connected;
 
@@ -33,6 +43,8 @@ class EmergencySseService {
     if (_connected) return;
 
     _controller = StreamController<EmergencyResolution>.broadcast();
+    _pingController = StreamController<PingEvent>.broadcast(); // NEW
+    _startedController = StreamController<String>.broadcast();
     _httpClient = HttpClient();
 
     try {
@@ -48,9 +60,8 @@ class EmergencySseService {
       _connected = true;
 
       // SSE messages arrive as UTF-8 text lines separated by \n\n
-      final lines = response
-          .transform(utf8.decoder)
-          .transform(const LineSplitter());
+      final lines =
+          response.transform(utf8.decoder).transform(const LineSplitter());
 
       // Buffer to accumulate the current event's data line
       String dataBuffer = '';
@@ -88,7 +99,27 @@ class EmergencySseService {
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
       final eventType = decoded['type'] as String?;
 
-      // We only care about EMERGENCY_RESOLVED events
+      // Handle PING_SENT — officer wants to know if worker is OK
+      if (eventType == 'PING_SENT') {
+        final data = decoded['data'] as Map<String, dynamic>?;
+        if (data != null && !(_pingController?.isClosed ?? true)) {
+          _pingController!.add(PingEvent.fromJson(data));
+        }
+        return;
+      }
+
+      // Handle EMERGENCY_STARTED
+      if (eventType == 'EMERGENCY_STARTED') {
+        final data = decoded['data'] as Map<String, dynamic>?;
+        if (data != null && !(_startedController?.isClosed ?? true)) {
+          final emergencyJson = data['emergency'] as Map<String, dynamic>?;
+          final id = emergencyJson?['id'] as String?;
+          if (id != null) _startedController!.add(id);
+        }
+        return;
+      }
+
+      // We only care about EMERGENCY_RESOLVED events from here on
       if (eventType != 'EMERGENCY_RESOLVED') return;
 
       final data = decoded['data'] as Map<String, dynamic>?;
@@ -119,5 +150,9 @@ class EmergencySseService {
     _httpClient = null;
     _controller?.close();
     _controller = null;
+    _pingController?.close(); // NEW
+    _pingController = null; // NEW
+    _startedController?.close();
+    _startedController = null;
   }
 }

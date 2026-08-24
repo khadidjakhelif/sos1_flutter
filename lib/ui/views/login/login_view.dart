@@ -33,6 +33,7 @@ class _LoginViewState extends State<LoginView> {
   // Extra fields for registration
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _unitController = TextEditingController();
 
   Future<void> _submit() async {
     if (_employeeIdController.text.isEmpty ||
@@ -74,6 +75,7 @@ class _LoginViewState extends State<LoginView> {
           password: _passwordController.text,
           phone: _phoneController.text.trim(),
           companyCode: _companyCodeController.text.trim(),
+          unit: _unitController.text.trim(),
         );
       }
 // NEW: if the response includes an existing medical profile, cache it locally
@@ -179,6 +181,9 @@ class _LoginViewState extends State<LoginView> {
                     SizedBox(height: 16.h),
                     _buildField(_phoneController, 'Téléphone', Icons.phone,
                         keyboardType: TextInputType.phone),
+                    SizedBox(height: 16.h),
+                    _buildField(_unitController, 'Unité / Département', Icons.domain,
+                        hint: 'Ex: Maintenance (Optionnel)'),
                     SizedBox(height: 16.h),
                   ],
 

@@ -3,6 +3,9 @@ import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/app/app.locator.dart';
 import 'package:sos1/app/app.router.dart';
+import 'package:sos1/services/api_service.dart';
+import 'package:sos1/services/emergency_sse_service.dart';
+import 'package:sos1/services/worker_location_service.dart';
 import 'package:sos1/services/ai_speech_service.dart';
 import 'package:sos1/services/ai_tts_service.dart';
 import 'package:sos1/utils/app_config.dart';
@@ -14,6 +17,9 @@ class VoiceAssistantViewModel extends BaseViewModel {
   final _aiTtsService = locator<AITtsService>();
   final _languageService = locator<LanguageService>();
   final _navigationService = locator<NavigationService>();
+  final _apiService = locator<ApiService>();
+  final _sseService = locator<EmergencySseService>();
+  final _workerLocationService = locator<WorkerLocationService>();
 
   // Reactive state
   bool get isListening => _aiSpeechService.isListening;
@@ -39,6 +45,8 @@ class VoiceAssistantViewModel extends BaseViewModel {
   bool get isAIEnabled => _isAIEnabled;
 
   StreamSubscription? _intentSubscription;
+  StreamSubscription? _sseStartedSub;
+  StreamSubscription? _sseResolvedSub;
 
   Future<void> initialize() async {
     setBusy(true);
@@ -53,6 +61,31 @@ class VoiceAssistantViewModel extends BaseViewModel {
     // Listen to AI intent detection
     _intentSubscription =
         _aiSpeechService.intentStream.listen(_onEmergencyDetected);
+
+    // Global SSE & Worker Location Setup
+    try {
+      final token = await _apiService.getToken();
+      final companyId = await _apiService.getCompanyId();
+      if (token != null && companyId != null) {
+        await _sseService.connect(companyId, token);
+        
+        // Fetch initially active emergencies so we don't miss any that started before we opened the app
+        final activeEmergencies = await _apiService.getActiveCompanyEmergencies();
+        for (final emg in activeEmergencies) {
+          final id = emg['id'] as String?;
+          if (id != null) _workerLocationService.start(id);
+        }
+
+        _sseStartedSub = _sseService.emergencyStartedStream.listen((id) {
+          _workerLocationService.start(id);
+        });
+        _sseResolvedSub = _sseService.resolutionStream.listen((resolution) {
+          _workerLocationService.stop(resolution.emergencyId);
+        });
+      }
+    } catch (e) {
+      print('Failed to setup SSE in VoiceAssistant: $e');
+    }
 
     // Speak AI greeting after a short delay
     Future.delayed(const Duration(milliseconds: 300), () async {
@@ -222,8 +255,12 @@ class VoiceAssistantViewModel extends BaseViewModel {
 
   @override
   void dispose() {
-    _intentSubscription?.cancel();
     _aiSpeechService.removeListener(_onSpeechUpdate);
+    _intentSubscription?.cancel();
+    _sseStartedSub?.cancel();
+    _sseResolvedSub?.cancel();
+    _workerLocationService.stopAll();
+    _sseService.disconnect();
     super.dispose();
   }
 }

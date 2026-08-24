@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart'; // NEW — for timestamp formatting
@@ -43,6 +44,10 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
             // Resolution banner — shown when officer resolves from dashboard
             if (viewModel.resolution != null)
               _buildResolutionBanner(viewModel),
+
+            // NEW: "Are you OK?" ping prompt from the officer
+            if (viewModel.pendingPing != null)
+              _buildPingPrompt(viewModel),
 
             // Chat Messages
             Expanded(
@@ -316,6 +321,14 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
         .animate()
         .slideY(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOut)
         .fadeIn(duration: 300.ms);
+  }
+
+  // NEW: "Are you OK?" ping prompt shown when the officer sends a check-in ping
+  Widget _buildPingPrompt(EmergencyModeViewModel viewModel) {
+    return _PingPromptBanner(
+      ping: viewModel.pendingPing!,
+      onAcknowledge: viewModel.acknowledgePing,
+    );
   }
 
   Widget _buildEmergencyHeader(EmergencyModeViewModel viewModel) {
@@ -774,5 +787,150 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
       emergencyDescription: emergencyDescription,
       location: location,
     );
+  }
+}
+
+// ─── Ping Prompt Banner ────────────────────────────────────────────────────────
+
+/// Stateful widget that shows a 60-second countdown for the officer's
+/// "are you OK?" ping. Tapping the acknowledge button calls [onAcknowledge].
+/// When the countdown expires the banner auto-dismisses (the backend already
+/// logged the unanswered ping — the viewmodel clears pendingPing via the timer
+/// expiry so the conditional in the view removes this widget).
+class _PingPromptBanner extends StatefulWidget {
+  final dynamic ping; // PingEvent
+  final Future<void> Function() onAcknowledge;
+
+  const _PingPromptBanner({
+    required this.ping,
+    required this.onAcknowledge,
+  });
+
+  @override
+  State<_PingPromptBanner> createState() => _PingPromptBannerState();
+}
+
+class _PingPromptBannerState extends State<_PingPromptBanner> {
+  late int _secondsLeft;
+  Timer? _countdown;
+
+  @override
+  void initState() {
+    super.initState();
+    _secondsLeft = widget.ping.windowSeconds as int? ?? 60;
+    _countdown = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        _secondsLeft--;
+        if (_secondsLeft <= 0) {
+          t.cancel();
+          // The viewmodel will clear pendingPing when it detects the window
+          // expired — no forced rebuild needed here.
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdown?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4A2C00), Color(0xFF7B4500)],
+        ),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFFFFB300), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFB300).withOpacity(0.35),
+            blurRadius: 14,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Pulsing bell icon
+              Icon(Icons.notifications_active, color: const Color(0xFFFFB300), size: 22.sp)
+                  .animate(onPlay: (c) => c.repeat())
+                  .scaleXY(begin: 1.0, end: 1.15, duration: 600.ms)
+                  .then()
+                  .scaleXY(begin: 1.15, end: 1.0, duration: 600.ms),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Text(
+                  'L\'officier demande: Êtes-vous OK?',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              // Countdown circle
+              Container(
+                width: 40.w,
+                height: 40.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFFFB300), width: 2),
+                ),
+                child: Center(
+                  child: Text(
+                    '$_secondsLeft',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFFFFB300),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          GestureDetector(
+            onTap: () async {
+              _countdown?.cancel();
+              await widget.onAcknowledge();
+            },
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFB300),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Center(
+                child: Text(
+                  '✅  JE SUIS OK',
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    )
+        .animate()
+        .slideY(begin: -0.3, end: 0, duration: 350.ms, curve: Curves.easeOut)
+        .fadeIn(duration: 300.ms);
   }
 }

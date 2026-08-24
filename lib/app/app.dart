@@ -1,6 +1,7 @@
 import 'package:sos1/services/api_service.dart';
 import 'package:sos1/services/emergency_actions_service.dart';
 import 'package:sos1/services/emergency_sse_service.dart';
+import 'package:sos1/services/worker_location_service.dart';
 import 'package:sos1/ui/views/legal/privacy_policy/privacy_screen_view.dart';
 import 'package:sos1/ui/views/legal/terms_of_use/terms_of_use_view.dart';
 import 'package:stacked/stacked_annotations.dart';

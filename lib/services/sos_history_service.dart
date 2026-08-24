@@ -91,4 +91,11 @@ class SOSHistoryService with ListenableServiceMixin {
       return null;
     }
   }
+
+  Future<void> clearHistory() async {
+    var box = await Hive.openBox<EmergencyHistory>('emergencyHistoryBox');
+    await box.clear();
+    _incidents.value = [];
+    notifyListeners();
+  }
 }

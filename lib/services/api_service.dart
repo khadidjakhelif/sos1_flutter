@@ -48,6 +48,7 @@ class ApiService {
     final data = response.data['data'];
     await _saveToken(data['access_token']);
     await _saveUserId(data['user']['id']);
+    await _saveCompanyId(data['user']['company_id']);
     return data;
   }
 
@@ -57,6 +58,7 @@ class ApiService {
     required String password,
     required String phone,
     required String companyCode,
+    String? unit,
   }) async {
     final response = await _dio.post('/auth/register', data: {
       'full_name': fullName,
@@ -64,10 +66,12 @@ class ApiService {
       'password': password,
       'phone': phone,
       'company_code': companyCode.toUpperCase(),
+      if (unit != null && unit.isNotEmpty) 'unit': unit,
     });
     final data = response.data['data'];
     await _saveToken(data['access_token']);
     await _saveUserId(data['user']['id']);
+    await _saveCompanyId(data['user']['company_id']);
     return data;
   }
 
@@ -129,6 +133,45 @@ class ApiService {
     });
   }
 
+  /// Sends a GPS heartbeat for [emergencyId].
+  /// Called every ~30 s by EmergencyHeartbeatService while emergency is active.
+  /// Also acts as an interaction signal (updates last_seen_active on backend).
+  /// PRIVACY NOTE: called only while an active emergency is in progress.
+  Future<void> sendGpsHeartbeat({
+    required String emergencyId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      await _dio.post('/emergencies/$emergencyId/heartbeat', data: {
+        'latitude':  latitude,
+        'longitude': longitude,
+      });
+    } catch (_) {} // silent fail — heartbeat is best-effort
+  }
+
+  /// Worker acknowledges an "are you OK?" ping from the officer.
+  Future<bool> acknowledgePing(String emergencyId) async {
+    try {
+      await _dio.post('/emergencies/$emergencyId/ping-ack');
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ── Worker Heartbeat ──────────────────────────────────────────────────────
+
+  Future<void> updateUserHeartbeat(double lat, double lng) async {
+    await _dio.put(
+      '/users/heartbeat',
+      data: {
+        'latitude': lat,
+        'longitude': lng,
+      },
+    );
+  }
+
   // ── Medical Profile ───────────────────────────────────────────────────────
 
   Future<void> syncMedicalProfile(MedicalProfile profile) async {
@@ -158,6 +201,16 @@ class ApiService {
     return _handleRequest(() async {
       final res =
           await _dio.get('/emergencies', queryParameters: {'user_id': 'me'});
+      if (res.data['data'] != null && res.data['data']['items'] != null) {
+        return List<Map<String, dynamic>>.from(res.data['data']['items']);
+      }
+      return [];
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getActiveCompanyEmergencies() async {
+    return _handleRequest(() async {
+      final res = await _dio.get('/emergencies', queryParameters: {'status': 'active'});
       if (res.data['data'] != null && res.data['data']['items'] != null) {
         return List<Map<String, dynamic>>.from(res.data['data']['items']);
       }
@@ -213,10 +266,21 @@ class ApiService {
     return prefs.getString('user_id');
   }
 
+  Future<void> _saveCompanyId(String companyId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('company_id', companyId);
+  }
+
+  Future<String?> getCompanyId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('company_id');
+  }
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
+    await prefs.remove('company_id');
   }
 
   Future<bool> isLoggedIn() async {

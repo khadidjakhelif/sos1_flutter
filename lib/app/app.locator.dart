@@ -19,6 +19,7 @@ import '../services/medical_profile_service.dart';
 import '../services/sos_history_service.dart';
 import '../services/speech_recognition_service.dart';
 import '../services/text_to_speech_service.dart';
+import '../services/worker_location_service.dart';
 import '../utils/app_language_provider.dart';
 
 final locator = StackedLocator.instance;

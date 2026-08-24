@@ -3,7 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:sos1/models/emergency_history.dart';
 import 'package:sos1/models/emergency_resolution.dart';
 import 'package:sos1/models/language.dart';
+import 'package:sos1/models/ping_event.dart';                        // NEW
 import 'package:sos1/services/api_service.dart';
+import 'package:sos1/services/emergency_heartbeat_service.dart';     // NEW
 import 'package:sos1/services/emergency_sse_service.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
@@ -29,6 +31,7 @@ class EmergencyModeViewModel extends BaseViewModel {
   final _emergencyActions = locator<EmergencyActionsService>();
   final _sseService = locator<EmergencySseService>(); // NEW
   final _apiService = locator<ApiService>(); // NEW (moved from local var)
+  final _heartbeatService = locator<EmergencyHeartbeatService>(); // NEW
 
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
@@ -38,6 +41,11 @@ class EmergencyModeViewModel extends BaseViewModel {
   EmergencyResolution? _resolution;
   EmergencyResolution? get resolution => _resolution; // consumed by the view
   StreamSubscription<EmergencyResolution>? _resolutionSub; // NEW
+
+  // ── NEW: Ping state ───────────────────────────────────────────────────────
+  PingEvent? _pendingPing;
+  PingEvent? get pendingPing => _pendingPing;
+  StreamSubscription<PingEvent>? _pingSub; // NEW
 
   // ── Reactive state (UNCHANGED) ───────────────────────────────────────
   bool get isProcessing => _aiAssistant.isProcessing;
@@ -91,6 +99,8 @@ class EmergencyModeViewModel extends BaseViewModel {
     _elapsedTimer?.cancel();
     _countdownTimer?.cancel();
     _resolutionSub?.cancel();
+    _pingSub?.cancel();              // NEW
+    _heartbeatService.stop();        // NEW — stop GPS immediately on dispose
     _sseService.disconnect();
     super.dispose();
   }
@@ -186,6 +196,8 @@ class EmergencyModeViewModel extends BaseViewModel {
           _emergencyId = response['id'] as String?;
           _companyId = response['company_id'] as String?;
           if (_companyId != null) await _connectSse();
+          // NEW: start GPS heartbeat now that we have an emergency ID
+          if (_emergencyId != null) _heartbeatService.start(_emergencyId!);
         }
         _reportStatus.value = EmergencyReportStatus.success;
         notifyListeners();
@@ -281,6 +293,14 @@ class EmergencyModeViewModel extends BaseViewModel {
 
         // Trigger TTS to read the banner aloud
         _speakResolutionBanner(resolution);
+      });
+
+      // NEW: subscribe to incoming pings from the officer
+      _pingSub = _sseService.pingSentStream.listen((ping) {
+        if (_emergencyId != null && ping.emergencyId != _emergencyId) return;
+        _pendingPing = ping;
+        notifyListeners();
+        print('[EmergencyModeViewModel] Ping received from officer');
       });
     } catch (e) {
       print('[EmergencyModeViewModel] SSE connect failed: $e'); // silent fail
@@ -465,6 +485,7 @@ class EmergencyModeViewModel extends BaseViewModel {
 
   Future<void> endEmergency() async {
     _elapsedTimer?.cancel();
+    _heartbeatService.stop(); // NEW — stop GPS immediately when worker ends emergency
 
     // Save to history
     await _saveToHistory();
@@ -474,6 +495,15 @@ class EmergencyModeViewModel extends BaseViewModel {
 
     // Navigate back
     _navigationService.back();
+  }
+
+  /// NEW: Worker acknowledges the "are you OK?" ping from the officer.
+  Future<void> acknowledgePing() async {
+    final id = _emergencyId;
+    if (id == null) return;
+    _pendingPing = null; // clear prompt immediately for responsiveness
+    notifyListeners();
+    await _apiService.acknowledgePing(id);
   }
 
   Future<void> _saveToHistory() async {
