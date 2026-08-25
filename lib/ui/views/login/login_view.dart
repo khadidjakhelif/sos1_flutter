@@ -10,6 +10,7 @@ import '../../../app/app.router.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:hive/hive.dart';
 import '../../../models/medical_profile.dart';
+import '../../../utils/department_units.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -33,7 +34,8 @@ class _LoginViewState extends State<LoginView> {
   // Extra fields for registration
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _unitController = TextEditingController();
+  String? _selectedDepartment;
+  String? _selectedUnit;
 
   Future<void> _submit() async {
     if (_employeeIdController.text.isEmpty ||
@@ -52,6 +54,13 @@ class _LoginViewState extends State<LoginView> {
     if (_passwordController.text.length < 6) {
       setState(() => _errorMessage =
           'Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+
+    if (!_isLoginMode &&
+        (_selectedDepartment == null || _selectedUnit == null)) {
+      setState(() =>
+          _errorMessage = 'Veuillez sélectionner votre département et unité.');
       return;
     }
 
@@ -75,7 +84,9 @@ class _LoginViewState extends State<LoginView> {
           password: _passwordController.text,
           phone: _phoneController.text.trim(),
           companyCode: _companyCodeController.text.trim(),
-          unit: _unitController.text.trim(),
+          unit: (_selectedDepartment != null && _selectedUnit != null)
+              ? DepartmentUnits.buildCode(_selectedDepartment!, _selectedUnit!)
+              : null,
         );
       }
 // NEW: if the response includes an existing medical profile, cache it locally
@@ -182,8 +193,28 @@ class _LoginViewState extends State<LoginView> {
                     _buildField(_phoneController, 'Téléphone', Icons.phone,
                         keyboardType: TextInputType.phone),
                     SizedBox(height: 16.h),
-                    _buildField(_unitController, 'Unité / Département', Icons.domain,
-                        hint: 'Ex: Maintenance (Optionnel)'),
+                    _buildDropdown(
+                      label: 'Département',
+                      icon: Icons.domain,
+                      value: _selectedDepartment,
+                      items: DepartmentUnits.departments,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedDepartment = value;
+                          _selectedUnit =
+                              null; // reset unit when department changes
+                        });
+                      },
+                    ),
+                    SizedBox(height: 16.h),
+                    _buildDropdown(
+                      label: 'Unité',
+                      icon: Icons.group_work,
+                      value: _selectedUnit,
+                      items: DepartmentUnits.unitsFor(_selectedDepartment),
+                      onChanged: (value) =>
+                          setState(() => _selectedUnit = value),
+                    ),
                     SizedBox(height: 16.h),
                   ],
 
@@ -345,6 +376,39 @@ class _LoginViewState extends State<LoginView> {
                 color: AppColors.textMuted, size: 20.sp),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required IconData icon,
+    required String? value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppColors.primaryRed.withOpacity(0.2)),
+      ),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        dropdownColor: AppColors.surface,
+        style: TextStyle(fontSize: 15.sp, color: Colors.white),
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20.sp),
+          labelText: label,
+          labelStyle: TextStyle(color: AppColors.textMuted, fontSize: 14.sp),
+          border: InputBorder.none,
+          contentPadding:
+              EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
+        ),
+        items: items
+            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+            .toList(),
+        onChanged: items.isEmpty ? null : onChanged,
       ),
     );
   }
