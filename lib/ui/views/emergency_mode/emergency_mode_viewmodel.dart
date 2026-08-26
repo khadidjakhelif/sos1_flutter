@@ -500,10 +500,14 @@ class EmergencyModeViewModel extends BaseViewModel {
   /// NEW: Worker acknowledges the "are you OK?" ping from the officer.
   Future<void> acknowledgePing() async {
     final id = _emergencyId;
-    if (id == null) return;
+    if (id == null) {
+      print('[EmergencyModeViewModel] acknowledgePing: _emergencyId is null, cannot ack');
+      return;
+    }
     _pendingPing = null; // clear prompt immediately for responsiveness
     notifyListeners();
-    await _apiService.acknowledgePing(id);
+    final success = await _apiService.acknowledgePing(id);
+    print('[EmergencyModeViewModel] acknowledgePing result: $success for emergency $id');
   }
 
   Future<void> _saveToHistory() async {

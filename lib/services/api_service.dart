@@ -153,9 +153,11 @@ class ApiService {
   /// Worker acknowledges an "are you OK?" ping from the officer.
   Future<bool> acknowledgePing(String emergencyId) async {
     try {
-      await _dio.post('/emergencies/$emergencyId/ping-ack');
+      final response = await _dio.post('/emergencies/$emergencyId/ping-ack');
+      print('[ApiService] acknowledgePing success: ${response.statusCode}');
       return true;
-    } catch (_) {
+    } catch (e) {
+      print('[ApiService] acknowledgePing FAILED for $emergencyId: $e');
       return false;
     }
   }
