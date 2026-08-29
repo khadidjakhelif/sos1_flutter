@@ -55,6 +55,10 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
                               viewModel.detectedEmergencyType.isNotEmpty)
                             _buildEmergencyResponse(
                                 viewModel, languageProvider),
+
+                          // Fix 3: Not-an-emergency feedback card
+                          if (viewModel.isNotEmergency)
+                            _buildNotEmergencyCard(viewModel, languageProvider),
                         ],
                       ),
                     ),
@@ -276,6 +280,78 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
         .slideY(begin: 0.2, end: 0)
         .then()
         .shimmer(duration: 1200.ms, color: Colors.white.withOpacity(0.15));
+  }
+
+  // ─────────────────────────────────────────
+  // FIX 3: NOT AN EMERGENCY CARD
+  // ─────────────────────────────────────────
+  Widget _buildNotEmergencyCard(
+      VoiceAssistantViewModel viewModel, LanguageProvider languageProvider) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 30.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 18.h),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: const Color(0xFF2ECC71).withOpacity(0.6),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2ECC71).withOpacity(0.12),
+            blurRadius: 16,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8.w),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2ECC71).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Icon(
+              Icons.check_circle_outline_rounded,
+              color: const Color(0xFF2ECC71),
+              size: 22.sp,
+            ),
+          ),
+          SizedBox(width: 14.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  languageProvider.translate('not_an_emergency'),
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF2ECC71),
+                  ),
+                ),
+                if (viewModel.notEmergencyText.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: 4.h),
+                    child: Text(
+                      '"${viewModel.notEmergencyText}"',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: AppColors.textMuted,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.15, end: 0);
   }
 
   // ─────────────────────────────────────────

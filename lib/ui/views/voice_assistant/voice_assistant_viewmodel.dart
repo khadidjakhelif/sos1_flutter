@@ -48,6 +48,14 @@ class VoiceAssistantViewModel extends BaseViewModel {
   StreamSubscription? _sseStartedSub;
   StreamSubscription? _sseResolvedSub;
 
+  // Fix 3: "not an emergency" UI state
+  bool _isNotEmergency = false;
+  String _notEmergencyText = '';
+  bool _disposed = false; // guard for delayed callbacks
+
+  bool get isNotEmergency => _isNotEmergency;
+  String get notEmergencyText => _notEmergencyText;
+
   Future<void> initialize() async {
     setBusy(true);
 
@@ -55,7 +63,10 @@ class VoiceAssistantViewModel extends BaseViewModel {
     await _aiSpeechService.initialize();
     await _aiTtsService.initialize();
 
-    // update userCommand live as user speaks
+    // Fix 1 & 2: Forward TTS state changes to the UI layer
+    _aiTtsService.addListener(_onTtsUpdate);
+
+    // Fix 2: Forward speech service state changes (so isListening resets the orb)
     _aiSpeechService.addListener(_onSpeechUpdate);
 
     // Listen to AI intent detection
@@ -100,20 +111,35 @@ class VoiceAssistantViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  /// LIVE SPEECH DISPLAY
+  /// Fix 1: Forward TTS changes (isSpeaking) to UI
+  void _onTtsUpdate() {
+    notifyListeners();
+  }
+
+  /// Fix 1: Stop TTS playback
+  Future<void> stopSpeaking() async {
+    await _aiTtsService.stop();
+    notifyListeners();
+  }
+
+  /// Fix 2 & LIVE SPEECH DISPLAY: Always notify so the orb icon
+  /// correctly reflects isListening going false after speech ends.
   void _onSpeechUpdate() {
     if (_aiSpeechService.isListening) {
       _userCommand = _aiSpeechService.recognizedWords.isNotEmpty
           ? _aiSpeechService.recognizedWords
           : _aiSpeechService.lastWords;
-      notifyListeners();
     }
+    // Always notify — covers isListening → false transition (orb icon fix)
+    notifyListeners();
   }
 
   void _onEmergencyDetected(EmergencyIntent intent) async {
     print('🔥 EMERGENCY DETECTED: ${intent.type} (${intent.confidence})');
     if (intent.isHighConfidence || intent.needsImmediateResponse == true) {
       print('🚨 HIGH CONFIDENCE - Showing UI');
+      // Reset "not an emergency" state if a real emergency follows
+      _isNotEmergency = false;
       _detectedEmergencyType = intent.type;
       _userCommand = intent.rawText;
       _showEmergencyResponse = true;
@@ -134,10 +160,38 @@ class VoiceAssistantViewModel extends BaseViewModel {
         });
       }
     } else {
-      print('ℹ️ Low confidence (${intent.confidence}) - No UI');
+      // Fix 3: Low-severity / not-an-emergency branch
+      print('ℹ️ Low confidence (${intent.confidence}) — sending reassurance');
+      _userCommand = intent.rawText;
+      _showEmergencyResponse = false;
+      _isNotEmergency = true;
+      _notEmergencyText = intent.rawText;
+      notifyListeners();
+
+      // Speak a localized reassurance message based on current language
+      final reassurance = _getReassuranceMessage();
+      await _aiTtsService.speak(reassurance);
+
+      // Auto-clear the "not an emergency" card after 5 seconds
+      Future.delayed(const Duration(seconds: 5), () {
+        if (!_disposed) {
+          _isNotEmergency = false;
+          notifyListeners();
+        }
+      });
     }
 
     notifyListeners();
+  }
+
+  /// Fix 3: Returns a localized reassurance message
+  String _getReassuranceMessage() {
+    final messages = {
+      'fr': 'Ce n\'est pas une urgence. Restez calme et prudent.',
+      'ar': 'هذه ليست حالة طوارئ. ابقَ هادئاً وحذراً.',
+      'en': 'This is not an emergency. Stay calm and careful.',
+    };
+    return messages[languageCode] ?? messages['fr']!;
   }
 
   Future<void> toggleListening() async {
@@ -237,6 +291,8 @@ class VoiceAssistantViewModel extends BaseViewModel {
     _showEmergencyResponse = false;
     _detectedEmergencyType = '';
     _userCommand = '';
+    _isNotEmergency = false;
+    _notEmergencyText = '';
     _aiSpeechService.clearRecognizedWords();
     notifyListeners();
   }
@@ -255,7 +311,9 @@ class VoiceAssistantViewModel extends BaseViewModel {
 
   @override
   void dispose() {
+    _disposed = true; // guard delayed callbacks
     _aiSpeechService.removeListener(_onSpeechUpdate);
+    _aiTtsService.removeListener(_onTtsUpdate); // Fix 1
     _intentSubscription?.cancel();
     _sseStartedSub?.cancel();
     _sseResolvedSub?.cancel();

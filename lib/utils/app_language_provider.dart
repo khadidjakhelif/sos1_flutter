@@ -142,6 +142,8 @@ class LanguageProvider extends ChangeNotifier {
       'clear_profile_message':
           'Supprimer toutes vos informations médicales ? Irréversible.',
       'delete': 'Supprimer',
+      'stop_reading': 'Arrêter la lecture',
+      'not_an_emergency': 'Pas une urgence',
     },
     'العربية': {
       'back': 'عودة',
@@ -270,6 +272,8 @@ class LanguageProvider extends ChangeNotifier {
       'clear_profile_title': 'حذف الملف الشخصي',
       'clear_profile_message': 'حذف جميع المعلومات الطبية؟ غير قابل للاسترجاع',
       'delete': 'حذف',
+      'stop_reading': 'إيقاف القراءة',
+      'not_an_emergency': 'ليست حالة طوارئ',
     },
     'English': {
       'back': 'Back',
@@ -402,6 +406,8 @@ class LanguageProvider extends ChangeNotifier {
       'clear_profile_title': 'Delete Profile',
       'clear_profile_message': 'Delete all medical info? Irreversible.',
       'delete': 'Delete',
+      'stop_reading': 'Stop Reading',
+      'not_an_emergency': 'Not an Emergency',
     },
   };
 

@@ -55,6 +55,11 @@ class EmergencyModeViewModel extends BaseViewModel {
   bool get isEmergencyActive => _aiAssistant.isEmergencyActive;
   bool get isSpeaking => _aiTts.isSpeaking;
 
+  Future<void> stopSpeaking() async {
+    await _aiTts.stop();
+    notifyListeners();
+  }
+
   // ── Emergency info (UNCHANGED) ────────────────────────────────────────
   String _emergencyType = '';
   String _emergencyDescription = '';
@@ -92,6 +97,15 @@ class EmergencyModeViewModel extends BaseViewModel {
   String get currentLanguage => _languageService.currentLanguage.displayName;
   String get languageCode => _languageService.currentLanguage.code;
 
+  String get stopReadingText {
+    final Map<String, String> translations = {
+      'fr': 'Arrêter la lecture',
+      'en': 'Stop Reading',
+      'ar': 'إيقاف القراءة'
+    };
+    return translations[languageCode] ?? 'Arrêter la lecture';
+  }
+
   @override
   void dispose() {
     _speech.cancel();
@@ -102,6 +116,7 @@ class EmergencyModeViewModel extends BaseViewModel {
     _pingSub?.cancel();              // NEW
     _heartbeatService.stop();        // NEW — stop GPS immediately on dispose
     _sseService.disconnect();
+    _aiTts.removeListener(_onTtsUpdate);
     super.dispose();
   }
 
@@ -127,6 +142,7 @@ class EmergencyModeViewModel extends BaseViewModel {
     setBusy(true);
 
     await _initSpeech();
+    _aiTts.addListener(_onTtsUpdate);
 
     _emergencyType = emergencyType;
     _emergencyDescription = emergencyDescription ?? '';
@@ -273,6 +289,10 @@ class EmergencyModeViewModel extends BaseViewModel {
     );
   }
 
+  void _onTtsUpdate() {
+    notifyListeners();
+  }
+
   // NEW: connect to the SSE stream and listen for EMERGENCY_RESOLVED events
   Future<void> _connectSse() async {
     try {
@@ -283,8 +303,9 @@ class EmergencyModeViewModel extends BaseViewModel {
 
       _resolutionSub = _sseService.resolutionStream.listen((resolution) {
         // Only react to events targeting our specific emergency
-        if (_emergencyId != null && resolution.emergencyId != _emergencyId)
+        if (_emergencyId != null && resolution.emergencyId != _emergencyId) {
           return;
+        }
 
         _resolution = resolution;
         notifyListeners(); // triggers _buildResolutionBanner in the view
@@ -412,6 +433,11 @@ class EmergencyModeViewModel extends BaseViewModel {
   Future<void> sendMessage(String message) async {
     final trimmed = message.trim();
     if (trimmed.isNotEmpty) {
+      if (_isListening) {
+        await _speech.stop();
+        _isListening = false;
+        notifyListeners();
+      }
       print('📤 [1] sendMessage START: "$trimmed"');
       await _aiAssistant.processUserMessage(
           trimmed, _languageService.getLanguageCode());
@@ -420,6 +446,7 @@ class EmergencyModeViewModel extends BaseViewModel {
       print('📤 [4] UI notified');
     }
   }
+
 
   String _getEmergencyNumber(String type) {
     final numbers = {

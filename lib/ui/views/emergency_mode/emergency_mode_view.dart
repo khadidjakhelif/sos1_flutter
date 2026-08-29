@@ -454,13 +454,13 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
         itemBuilder: (context, index) {
           final message =
               viewModel.messages[viewModel.messages.length - 1 - index];
-          return _buildMessageBubble(message);
+          return _buildMessageBubble(message, viewModel, index == 0);
         },
       ),
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildMessageBubble(ChatMessage message, EmergencyModeViewModel viewModel, bool isLatest) {
     final isUser = message.isUser;
 
     return Align(
@@ -486,36 +486,64 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
               ? Border.all(color: Colors.white, width: 2)
               : null,
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (message.isStep)
-              Container(
-                margin: EdgeInsets.only(bottom: 8.h),
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Text(
-                  'ÉTAPE ${message.stepNumber}',
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 1,
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (message.isStep)
+                    Container(
+                      margin: EdgeInsets.only(bottom: 8.h),
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Text(
+                        'ÉTAPE ${message.stepNumber}',
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  Text(
+                    message.text,
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w500,
+                      color: isUser ? const Color(0xFFB71C1C) : Colors.white,
+                      height: 1.5,
+                    ),
                   ),
-                ),
-              ),
-            Text(
-              message.text,
-              style: TextStyle(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w500,
-                color: isUser ? const Color(0xFFB71C1C) : Colors.white,
-                height: 1.5,
+                ],
               ),
             ),
+            if (!isUser && isLatest)
+              Padding(
+                padding: EdgeInsets.only(left: 12.w),
+                child: GestureDetector(
+                  onTap: viewModel.isSpeaking ? viewModel.stopSpeaking : null,
+                  child: viewModel.isSpeaking
+                      ? Icon(
+                          Icons.volume_up_rounded,
+                          color: Colors.white.withOpacity(0.9),
+                          size: 22.sp,
+                        )
+                          .animate(onPlay: (c) => c.repeat(reverse: true))
+                          .fade(begin: 0.5, end: 1.0, duration: 800.ms)
+                      : Icon(
+                          Icons.volume_off_rounded,
+                          color: Colors.white.withOpacity(0.5),
+                          size: 22.sp,
+                        ),
+                ),
+              ),
           ],
         ),
       ),
