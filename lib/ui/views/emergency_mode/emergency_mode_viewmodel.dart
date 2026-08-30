@@ -7,6 +7,7 @@ import 'package:sos1/models/ping_event.dart';                        // NEW
 import 'package:sos1/services/api_service.dart';
 import 'package:sos1/services/emergency_heartbeat_service.dart';     // NEW
 import 'package:sos1/services/emergency_sse_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:sos1/app/app.locator.dart';
@@ -41,6 +42,7 @@ class EmergencyModeViewModel extends BaseViewModel {
   EmergencyResolution? _resolution;
   EmergencyResolution? get resolution => _resolution; // consumed by the view
   StreamSubscription<EmergencyResolution>? _resolutionSub; // NEW
+  Timer? _messagePollTimer; // NEW: poll backend for officer/system messages
 
   // ── NEW: Ping state ───────────────────────────────────────────────────────
   PingEvent? _pendingPing;
@@ -68,6 +70,9 @@ class EmergencyModeViewModel extends BaseViewModel {
   // NEW: cached IDs for SSE subscription
   String? _emergencyId;
   String? _companyId;
+  String? _primaryOfficerPhone;
+  String? get primaryOfficerPhone => _primaryOfficerPhone;
+  String? get emergencyId => _emergencyId;
 
   String get emergencyType => _emergencyType;
   String get emergencyDescription => _emergencyDescription;
@@ -117,6 +122,8 @@ class EmergencyModeViewModel extends BaseViewModel {
     _heartbeatService.stop();        // NEW — stop GPS immediately on dispose
     _sseService.disconnect();
     _aiTts.removeListener(_onTtsUpdate);
+    _messagePollTimer?.cancel();
+    _aiAssistant.onMessageAdded = null;
     super.dispose();
   }
 
@@ -211,9 +218,21 @@ class EmergencyModeViewModel extends BaseViewModel {
         if (response != null) {
           _emergencyId = response['id'] as String?;
           _companyId = response['company_id'] as String?;
+          _primaryOfficerPhone = response['primary_officer_phone'] as String?;
           if (_companyId != null) await _connectSse();
           // NEW: start GPS heartbeat now that we have an emergency ID
-          if (_emergencyId != null) _heartbeatService.start(_emergencyId!);
+          if (_emergencyId != null) {
+            _heartbeatService.start(_emergencyId!);
+            _aiAssistant.onMessageAdded = (message) {
+              _apiService.sendTextMessageWithRole(
+                _emergencyId!,
+                message.text,
+                message.senderRole,
+              ); // fire-and-forget, no await
+            };
+            // Start polling for officer messages every 5s
+            _startMessagePolling();
+          }
         }
         _reportStatus.value = EmergencyReportStatus.success;
         notifyListeners();
@@ -252,6 +271,29 @@ class EmergencyModeViewModel extends BaseViewModel {
     });
   }
 
+  /// Poll backend messages every 5 seconds to receive officer messages
+  void _startMessagePolling() {
+    _messagePollTimer?.cancel();
+    _messagePollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      if (_emergencyId == null) return;
+      try {
+        final backendMessages = await _apiService.getMessages(_emergencyId!);
+        for (final msgJson in backendMessages) {
+          final chatMsg = ChatMessage.fromBackend(msgJson);
+          final isNew = _aiAssistant.addBackendMessage(chatMsg);
+          // If this is a new officer message, inject it into AI context
+          if (isNew && chatMsg.senderRole == 'safety_officer') {
+            _aiAssistant.injectOfficerMessage(chatMsg.text);
+            // Read it aloud via TTS
+            _aiTts.speak(chatMsg.text, urgent: true, interrupt: false);
+          }
+        }
+      } catch (e) {
+        print('[EmergencyModeViewModel] Message poll failed: $e');
+      }
+    });
+  }
+
   /// Cancels the auto-call countdown without placing the call.
   void cancelCountdown() {
     _countdownTimer?.cancel();
@@ -270,7 +312,6 @@ class EmergencyModeViewModel extends BaseViewModel {
       print('[Dispatch] Could not open dialler for $number');
     }
   }
-
   Future<void> _initSpeech() async {
     await _speech.initialize(
       onError: (error) {
@@ -439,6 +480,10 @@ class EmergencyModeViewModel extends BaseViewModel {
         notifyListeners();
       }
       print('📤 [1] sendMessage START: "$trimmed"');
+      // Also persist worker message to backend fire-and-forget
+      if (_emergencyId != null) {
+        _apiService.sendTextMessageWithRole(_emergencyId!, trimmed, 'worker');
+      }
       await _aiAssistant.processUserMessage(
           trimmed, _languageService.getLanguageCode());
       print('📤 [3] AI processing COMPLETE');
@@ -487,6 +532,20 @@ class EmergencyModeViewModel extends BaseViewModel {
       emergencyType: _emergencyType,
       customMessage: _emergencyDescription,
     );
+  }
+
+  Future<void> callOfficer() async {
+    if (_primaryOfficerPhone != null) {
+      final Uri launchUri = Uri(
+        scheme: 'tel',
+        path: _primaryOfficerPhone,
+      );
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        print('Could not launch $_primaryOfficerPhone');
+      }
+    }
   }
 
   Future<void> shareLocation() async {

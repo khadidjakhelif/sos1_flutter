@@ -1,10 +1,11 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sos1/models/medical_profile.dart';
 
-class ApiService {
-  static const String baseUrl =
-      'http://192.168.1.64:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
+class ApiService { 
+  // TODO: Move this IP to an environment config file (.env or --dart-define) to avoid conflicts!
+  static const String baseUrl = 'http://192.168.8.167:8000';
   static const String _tokenKey = 'jwt_token';
   static const String _userKey = 'current_user';
 
@@ -15,6 +16,10 @@ class ApiService {
     sendTimeout: const Duration(seconds: 30),
     headers: {'Content-Type': 'application/json'},
   ));
+
+  /// Exposes the configured [Dio] instance (with auth interceptor) for
+  /// callers that need custom request options (e.g. binary downloads).
+  Dio get dio => _dio;
 
   ApiService() {
     // Add JWT token to every request automatically
@@ -220,12 +225,89 @@ class ApiService {
     });
   }
 
+  // ── Chat ──────────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getMessages(String emergencyId) async {
+    return _handleRequest(() async {
+      final res = await _dio.get('/emergencies/$emergencyId/messages');
+      if (res.data['data'] != null) {
+        return List<Map<String, dynamic>>.from(res.data['data']);
+      }
+      return [];
+    });
+  }
+
   // ── Keep alive ────────────────────────────────────────────────────────────
+
+  Future<void> sendTextMessage(String emergencyId, String content) async {
+    await _handleRequest(() async {
+      await _dio.post(
+        '/emergencies/$emergencyId/messages/text',
+        data: {'content': content},
+      );
+    });
+  }
+
+  /// Send a text message with an explicit sender_role (e.g. 'ai_assistant', 'system').
+  /// Fire-and-forget: errors are silently ignored.
+  Future<void> sendTextMessageWithRole(String emergencyId, String content, String senderRole) async {
+    try {
+      await _dio.post(
+        '/emergencies/$emergencyId/messages/text',
+        data: {'content': content, 'sender_role': senderRole},
+      );
+    } catch (e) {
+      print('[ApiService] fire-and-forget sendTextMessageWithRole failed: $e');
+    }
+  }
+
+  Future<void> sendVoiceMessage(String emergencyId, String filePath) async {
+    await _handleRequest(() async {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath, filename: 'voice_message.m4a'),
+      });
+      await _dio.post(
+        '/emergencies/$emergencyId/messages/voice',
+        data: formData,
+      );
+    });
+  }
+
+  // ── FCM ───────────────────────────────────────────────────────────────────
+
+  Future<void> registerFcmToken(String token, String deviceInfo) async {
+    try {
+      await _dio.post('/users/fcm-tokens', data: {
+        'token': token,
+        'device_info': deviceInfo,
+      });
+    } catch (_) {} // Silent fail
+  }
+
+  Future<void> deleteFcmToken(String token) async {
+    try {
+      await _dio.delete('/users/fcm-tokens/$token');
+    } catch (_) {} // Silent fail
+  }
 
   Future<void> updateLastSeen() async {
     try {
       await _dio.put('/users/last-seen');
     } catch (_) {} // silent fail
+  }
+
+  // ── Live location ─────────────────────────────────────────────────────────────
+
+  /// Reports the worker's current GPS position to the backend.
+  /// Called periodically by [LocationTrackingService] while the app is foregrounded.
+  /// Silent-fails so a momentary network hiccup never surfaces to the user.
+  Future<void> updateLocation(double latitude, double longitude) async {
+    try {
+      await _dio.put('/users/location', data: {
+        'latitude': latitude,
+        'longitude': longitude,
+      });
+    } catch (_) {} // silent fail — do not interrupt user workflow
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

@@ -461,26 +461,59 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
   }
 
   Widget _buildMessageBubble(ChatMessage message, EmergencyModeViewModel viewModel, bool isLatest) {
-    final isUser = message.isUser;
+    final isWorker = message.senderRole == 'worker';
+    final isOfficer = message.senderRole == 'safety_officer';
+    final isSystem = message.senderRole == 'system';
+    final isUser = isWorker; // Aliased for distant code compat
+
+    if (isSystem) {
+      return Align(
+        alignment: Alignment.center,
+        child: Container(
+          margin: EdgeInsets.symmetric(vertical: 8.h, horizontal: 20.w),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          child: Text(
+            message.text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.white70,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      ).animate().fadeIn(duration: 300.ms);
+    }
+
+    Color bgColor = isWorker
+        ? Colors.white.withOpacity(0.9)
+        : isOfficer
+            ? const Color(0xFF1565C0) // Officer blue
+            : Colors.grey.withOpacity(0.3); // AI dark grey
+
+    Color textColor = isWorker ? const Color(0xFFB71C1C) : Colors.white;
 
     return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isWorker ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: EdgeInsets.only(
           bottom: 12.h,
-          left: isUser ? 60.w : 0,
-          right: isUser ? 0 : 60.w,
+          left: isWorker ? 60.w : 0,
+          right: isWorker ? 0 : 60.w,
         ),
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          color: isUser
-              ? Colors.white.withOpacity(0.9)
-              : Colors.grey.withOpacity(0.3),
+          color: bgColor,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20.r),
             topRight: Radius.circular(20.r),
-            bottomLeft: Radius.circular(isUser ? 20.r : 4.r),
-            bottomRight: Radius.circular(isUser ? 4.r : 20.r),
+            bottomLeft: Radius.circular(isWorker ? 20.r : 4.r),
+            bottomRight: Radius.circular(isWorker ? 4.r : 20.r),
           ),
           border: message.isImportant
               ? Border.all(color: Colors.white, width: 2)
@@ -494,6 +527,31 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (isOfficer)
+                    Container(
+                      margin: EdgeInsets.only(bottom: 6.h),
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.security, color: Colors.white, size: 12.sp),
+                          SizedBox(width: 4.w),
+                          Text(
+                            'OFFICIER SÉCURITÉ',
+                            style: TextStyle(
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   if (message.isStep)
                     Container(
                       margin: EdgeInsets.only(bottom: 8.h),
@@ -517,7 +575,7 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
                     style: TextStyle(
                       fontSize: 15.sp,
                       fontWeight: FontWeight.w500,
-                      color: isUser ? const Color(0xFFB71C1C) : Colors.white,
+                      color: textColor,
                       height: 1.5,
                     ),
                   ),
@@ -548,12 +606,12 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
         ),
       ),
     ).animate().fadeIn(duration: 300.ms).slideX(
-          begin: isUser ? 0.2 : -0.2,
+          begin: isWorker ? 0.2 : -0.2,
           end: 0,
         );
   }
 
-  Widget _buildQuickActions(EmergencyModeViewModel viewModel) {
+  Widget _buildQuickActions(BuildContext context, EmergencyModeViewModel viewModel) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
@@ -583,15 +641,11 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
           SizedBox(
             width: 8,
           ),
+          // Officer button removed because chat is unified
           _buildQuickActionButton(
             icon: Icons.skip_next,
-            label: 'ÉTAPE SUIVANTE',
+            label: 'ÉTAPE SUIV',
             onTap: viewModel.nextStep,
-          ),
-          _buildQuickActionButton(
-            icon: Icons.repeat,
-            label: 'RÉPÉTER',
-            onTap: viewModel.repeatStep,
           ),
         ],
       ),

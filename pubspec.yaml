@@ -30,7 +30,7 @@ dependencies:
   # Utilities
   intl: ^0.19.0
   permission_handler: ^11.3.0
-  url_launcher: ^6.3.0
+  url_launcher: ^6.3.2
   share_plus: ^7.2.1
   path_provider: ^2.1.2
   
@@ -47,7 +47,7 @@ dependencies:
   geocoding: ^2.1.1
   
   # Audio
-  audioplayers: ^6.1.0
+  audioplayers: ^6.7.1
   
   # HTTP Client for AI APIs
   dio: ^5.4.0
@@ -60,6 +60,9 @@ dependencies:
 
   # decode JWT token
   jwt_decoder: ^2.0.1
+  firebase_core: ^4.13.0
+  firebase_messaging: ^16.5.0
+  record: ^6.2.1
 
 dev_dependencies:
   flutter_test:
