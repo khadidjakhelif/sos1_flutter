@@ -17,6 +17,8 @@ import 'package:sos1/services/medical_profile_service.dart';
 import 'package:sos1/services/emergency_actions_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -96,6 +98,29 @@ void main() async {
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     await locator<AITtsService>().initialize();
     await locator<EmergencyActionsService>().initialize();
+    
+    // Initialize Firebase
+    try {
+      await Firebase.initializeApp();
+      
+      // Request permission
+      await FirebaseMessaging.instance.requestPermission();
+      
+      // Sync FCM token if logged in
+      if (isLoggedIn) {
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null) {
+          await apiService.registerFcmToken(token, 'Flutter App');
+        }
+        
+        // Listen to token refresh
+        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+          apiService.registerFcmToken(newToken, 'Flutter App');
+        });
+      }
+    } catch (e) {
+      print('Firebase initialization failed: $e');
+    }
   });
 }
 

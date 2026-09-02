@@ -11,6 +11,7 @@ import 'package:sos1/services/ai_tts_service.dart';
 import 'package:sos1/utils/app_config.dart';
 import 'package:sos1/services/language_service.dart';
 import 'package:sos1/models/language.dart';
+import 'package:sos1/services/location_tracking_service.dart';
 
 class VoiceAssistantViewModel extends BaseViewModel {
   final _aiSpeechService = locator<AISpeechService>();
@@ -20,6 +21,7 @@ class VoiceAssistantViewModel extends BaseViewModel {
   final _apiService = locator<ApiService>();
   final _sseService = locator<EmergencySseService>();
   final _workerLocationService = locator<WorkerLocationService>();
+  final _locationTracking = locator<LocationTrackingService>();
 
   // Reactive state
   bool get isListening => _aiSpeechService.isListening;
@@ -65,6 +67,9 @@ class VoiceAssistantViewModel extends BaseViewModel {
 
     // Fix 1 & 2: Forward TTS state changes to the UI layer
     _aiTtsService.addListener(_onTtsUpdate);
+
+    // Start live location reporting to the backend dashboard
+    _locationTracking.start();
 
     // Fix 2: Forward speech service state changes (so isListening resets the orb)
     _aiSpeechService.addListener(_onSpeechUpdate);
@@ -312,6 +317,8 @@ class VoiceAssistantViewModel extends BaseViewModel {
   @override
   void dispose() {
     _disposed = true; // guard delayed callbacks
+    _locationTracking.stop();
+    _intentSubscription?.cancel();
     _aiSpeechService.removeListener(_onSpeechUpdate);
     _aiTtsService.removeListener(_onTtsUpdate); // Fix 1
     _intentSubscription?.cancel();

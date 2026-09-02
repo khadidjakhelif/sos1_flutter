@@ -33,6 +33,10 @@ class AIEmergencyAssistant with ListenableServiceMixin {
   final AITtsService _ttsService;
   final MedicalProfileService? _medicalProfileService;
 
+  /// Callback invoked when a new AI/system message is added, so the viewmodel
+  /// can fire-and-forget POST it to the backend.
+  void Function(ChatMessage message)? onMessageAdded;
+
   AIEmergencyAssistant(this._ttsService, [this._languageService, this._medicalProfileService]) {
     _initializeAI();
   }
@@ -109,6 +113,7 @@ Tu dois:
 5. Prioriser la sécurité de la victime
 6. TOUJOURS tenir compte du profil médical du patient si disponible
 7. AVERTIR immédiatement si une instruction pourrait être dangereuse vu les allergies ou maladies
+8. Un officier de sécurité humain supervise l'intervention. Ne contredis JAMAIS ses ordres et adapte tes conseils en conséquence.
 
 Réponds en français, de manière concise (1-2 phrases max par message).
 ''',
@@ -122,6 +127,7 @@ Réponds en français, de manière concise (1-2 phrases max par message).
 5. إعطاء الأولوية لسلامة الضحية
 6. مراعاة الملف الطبي للمريض دائماً إن توفر
 7. التحذير فوراً إذا كانت التعليمات خطيرة بسبب الحساسية أو الأمراض
+8. مسؤول السلامة البشري يشرف على التدخل. لا تناقض أوامره أبداً.
 
 أجب بالعربية، جملتين كحد أقصى.
 ''',
@@ -135,6 +141,7 @@ You must:
 5. Prioritize the victim's safety
 6. ALWAYS consider the patient's medical profile if available
 7. IMMEDIATELY warn if an instruction could be dangerous given allergies or conditions
+8. A human safety officer supervises the intervention. NEVER contradict their orders and adapt your advice accordingly.
 
 Respond in English, 1-2 sentences max per message.
 ''',
@@ -180,6 +187,7 @@ Respond in English, 1-2 sentences max per message.
       isUser: false,
       text: welcomeText,
       timestamp: DateTime.now(),
+      senderRole: 'ai_assistant',
     );
     _addMessage(welcomeMessage);
 
@@ -209,6 +217,7 @@ Respond in English, 1-2 sentences max per message.
         text: completeText,
         timestamp: DateTime.now(),
         isImportant: true,
+        senderRole: 'ai_assistant',
       );
       _addMessage(completeMessage);
       await _ttsService.speak(completeMessage.text, urgent: true, interrupt: false);
@@ -230,6 +239,7 @@ Respond in English, 1-2 sentences max per message.
       timestamp: DateTime.now(),
       isStep: true,
       stepNumber: _currentStepIndex.value + 1,
+      senderRole: 'ai_assistant',
     );
     _addMessage(stepMessage);
 
@@ -281,6 +291,7 @@ Respond in $langName.
         isUser: false,
         text: aiResponse,
         timestamp: DateTime.now(),
+        senderRole: 'ai_assistant',
       );
       _addMessage(message);
       await _ttsService.speak(aiResponse, urgent: true, interrupt: false);
@@ -291,6 +302,7 @@ Respond in $langName.
         isUser: false,
         text: fallback,
         timestamp: DateTime.now(),
+        senderRole: 'ai_assistant',
       );
       _addMessage(message);
       await _ttsService.speak(fallback, urgent: true, interrupt: false);
@@ -343,6 +355,7 @@ Respond in $langName.
         isUser: false,
         text: aiResponse,
         timestamp: DateTime.now(),
+        senderRole: 'ai_assistant',
       );
       _addMessage(aiMessage);
       await _ttsService.speak(aiResponse, urgent: true, interrupt: false);
@@ -372,6 +385,42 @@ Respond in $langName.
   void _addMessage(ChatMessage message) {
     _messages.value = [..._messages.value, message];
     notifyListeners();
+    // Fire callback for backend sync (AI/system messages)
+    if (message.senderRole == 'ai_assistant' || message.senderRole == 'system') {
+      onMessageAdded?.call(message);
+    }
+  }
+
+  /// Inject an officer message into the conversation history so the AI
+  /// considers it in subsequent responses (officer primacy rule).
+  void injectOfficerMessage(String content) {
+    _conversationHistory.add({
+      'role': 'user',
+      'content': '[Officier de sécurité]: $content',
+    });
+  }
+
+  /// Add a backend message to the local list (for polling merge).
+  /// Returns true if it was new, false if duplicate.
+  bool addBackendMessage(ChatMessage message) {
+    // Deduplication by id
+    if (message.id != null && _messages.value.any((m) => m.id == message.id)) {
+      return false;
+    }
+    // Also deduplicate by text+timestamp proximity for AI messages we already have locally
+    if (message.senderRole == 'ai_assistant') {
+      final exists = _messages.value.any((m) =>
+        m.senderRole == 'ai_assistant' &&
+        m.text == message.text &&
+        m.timestamp.difference(message.timestamp).abs() < const Duration(seconds: 10)
+      );
+      if (exists) return false;
+    }
+    _messages.value = [..._messages.value, message];
+    // Sort by timestamp
+    _messages.value.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    notifyListeners();
+    return true;
   }
 
   /// UNCHANGED
@@ -411,6 +460,7 @@ Respond in $langName.
       text: endText,
       timestamp: DateTime.now(),
       isImportant: true,
+      senderRole: 'system',
     );
     _addMessage(endMessage);
     await _ttsService.speak(endMessage.text, interrupt: false);
@@ -452,7 +502,7 @@ Respond in $langName.
   }
 }
 
-/// Chat Message Model — UNCHANGED
+/// Chat Message Model — EXTENDED for unified chat
 class ChatMessage {
   final bool isUser;
   final String text;
@@ -460,6 +510,8 @@ class ChatMessage {
   final bool isImportant;
   final bool isStep;
   final int? stepNumber;
+  final String senderRole; // 'worker', 'ai_assistant', 'safety_officer', 'system'
+  final String? id; // backend message id for deduplication
 
   ChatMessage({
     required this.isUser,
@@ -468,5 +520,21 @@ class ChatMessage {
     this.isImportant = false,
     this.isStep = false,
     this.stepNumber,
+    this.senderRole = 'worker',
+    this.id,
   });
+
+  /// Create from backend message JSON
+  factory ChatMessage.fromBackend(Map<String, dynamic> json) {
+    final role = json['sender_role'] as String? ?? 'worker';
+    return ChatMessage(
+      isUser: role == 'worker',
+      text: json['content'] as String? ?? '',
+      timestamp: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      senderRole: role,
+      id: json['id']?.toString(),
+      isStep: false,
+      isImportant: false,
+    );
+  }
 }
