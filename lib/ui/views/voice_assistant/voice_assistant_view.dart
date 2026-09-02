@@ -7,6 +7,7 @@ import 'voice_assistant_viewmodel.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_strings.dart';
 import '../../../utils/app_language_provider.dart';
+import '../../../utils/app_config.dart';
 import '../../widgets/sos_orb.dart';
 
 class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
@@ -49,6 +50,31 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
                             isProcessing: viewModel.isProcessing,
                             onTap: viewModel.toggleListening,
                           ),
+
+                          SizedBox(height: 32.h),
+
+                          // Quick tap emergency grid
+                          SizedBox(
+                            height: 104.h,
+                            child: ListView.separated(
+                              padding: EdgeInsets.symmetric(horizontal: 24.w),
+                              scrollDirection: Axis.horizontal,
+                              itemCount: EmergencyTypes.all.length,
+                              separatorBuilder: (_, __) =>
+                                  SizedBox(width: 12.w),
+                              itemBuilder: (context, index) {
+                                final type = EmergencyTypes.all[index];
+                                return _buildQuickAction(
+                                  _getIconData(type.iconName),
+                                  _getEmergencyDisplayName(
+                                      type.id, viewModel.languageCode),
+                                  () => viewModel.startEmergencyMode(type.id),
+                                );
+                              },
+                            ),
+                          ),
+
+                          SizedBox(height: 16.h),
 
                           // Emergency Response Card
                           if (viewModel.showEmergencyResponse &&
@@ -411,7 +437,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
       onTap: onTap,
       child: Container(
         width: 96.w,
-        padding: EdgeInsets.symmetric(vertical: 16.h),
+        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 4.w),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16.r),
@@ -422,15 +448,20 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: AppColors.primaryRed, size: 26.sp),
             SizedBox(height: 8.h),
             Text(
               label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
+                height: 1.1,
               ),
             ),
           ],
@@ -442,17 +473,45 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
   // ─────────────────────────────────────────
   // HELPERS
   // ─────────────────────────────────────────
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'monitor_heart':
+        return Icons.monitor_heart;
+      case 'medical_services':
+        return Icons.medical_services;
+      case 'water_drop':
+        return Icons.water_drop;
+      case 'air':
+        return Icons.air;
+      case 'local_fire_department':
+        return Icons.local_fire_department;
+      case 'local_police':
+        return Icons.local_police;
+      case 'visibility_off':
+        return Icons.visibility_off;
+      case 'personal_injury':
+        return Icons.personal_injury_outlined;
+      case 'whatshot':
+        return Icons.whatshot;
+      case 'bolt':
+        return Icons.bolt;
+      case 'compress':
+        return Icons.compress;
+      case 'masks':
+        return Icons.masks;
+      case 'emergency':
+        return Icons.emergency;
+      default:
+        return Icons.emergency;
+    }
+  }
+
   IconData _getEmergencyIcon(String type) {
-    final icons = {
-      'cardiac': Icons.favorite,
-      'medical': Icons.medical_services,
-      'bleeding': Icons.water_drop,
-      'choking': Icons.air,
-      'fire': Icons.local_fire_department,
-      'police': Icons.local_police,
-      'unconscious': Icons.bed,
-    };
-    return icons[type.toLowerCase()] ?? Icons.emergency;
+    final typeConfig = EmergencyTypes.getById(type);
+    if (typeConfig != null) {
+      return _getIconData(typeConfig.iconName);
+    }
+    return Icons.emergency;
   }
 
   String _getEmergencyDisplayName(String type, String langCode) {
@@ -465,6 +524,12 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
         'fire': 'Incendie',
         'police': 'Urgence Police',
         'unconscious': 'Inconscience',
+        'fall': 'Chute / Trauma',
+        'burn': 'Brûlure',
+        'electrocution': 'Électrocution',
+        'crush': 'Écrasement',
+        'respiratory': 'Détresse Respiratoire',
+        'other': 'Autre Urgence',
       },
       'ar': {
         'cardiac': 'توقف القلب',
@@ -474,6 +539,12 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
         'fire': 'حريق',
         'police': 'طوارئ أمنية',
         'unconscious': 'فقدان الوعي',
+        'fall': 'سقوط / إصابة',
+        'burn': 'حرق',
+        'electrocution': 'صعق كهربائي',
+        'crush': 'سحق',
+        'respiratory': 'ضيق تنفس',
+        'other': 'طوارئ أخرى',
       },
       'en': {
         'cardiac': 'Cardiac Emergency',
@@ -483,6 +554,12 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
         'fire': 'Fire',
         'police': 'Police Emergency',
         'unconscious': 'Unconsciousness',
+        'fall': 'Fall / Trauma',
+        'burn': 'Burn / Chemical',
+        'electrocution': 'Electrocution',
+        'crush': 'Crush Injury',
+        'respiratory': 'Respiratory Distress',
+        'other': 'Other Emergency',
       },
     };
     return names[langCode]?[type.toLowerCase()] ??

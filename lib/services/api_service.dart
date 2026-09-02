@@ -4,7 +4,7 @@ import 'package:sos1/models/medical_profile.dart';
 
 class ApiService {
   static const String baseUrl =
-      'http://192.168.1.64:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
+      'http://192.168.1.67:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
   static const String _tokenKey = 'jwt_token';
   static const String _userKey = 'current_user';
 
@@ -85,6 +85,7 @@ class ApiService {
     double? latitude,
     double? longitude,
     String? locationDescription,
+    String? voiceTranscript,
   }) async {
     // Map flutter's lowercase emergency types to the backend's allowed EMERGENCY_TYPES
     String mappedType;
@@ -120,6 +121,8 @@ class ApiService {
       'latitude': latitude,
       'longitude': longitude,
       'location_description': locationDescription,
+      if (voiceTranscript != null && voiceTranscript.isNotEmpty)
+        'voice_transcript': voiceTranscript,
     });
     print(response.data);
     print('from the api ');
@@ -144,7 +147,7 @@ class ApiService {
   }) async {
     try {
       await _dio.post('/emergencies/$emergencyId/heartbeat', data: {
-        'latitude':  latitude,
+        'latitude': latitude,
         'longitude': longitude,
       });
     } catch (_) {} // silent fail — heartbeat is best-effort
@@ -212,7 +215,8 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getActiveCompanyEmergencies() async {
     return _handleRequest(() async {
-      final res = await _dio.get('/emergencies', queryParameters: {'status': 'active'});
+      final res =
+          await _dio.get('/emergencies', queryParameters: {'status': 'active'});
       if (res.data['data'] != null && res.data['data']['items'] != null) {
         return List<Map<String, dynamic>>.from(res.data['data']['items']);
       }

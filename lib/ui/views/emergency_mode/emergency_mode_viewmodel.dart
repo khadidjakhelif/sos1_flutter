@@ -3,9 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:sos1/models/emergency_history.dart';
 import 'package:sos1/models/emergency_resolution.dart';
 import 'package:sos1/models/language.dart';
-import 'package:sos1/models/ping_event.dart';                        // NEW
+import 'package:sos1/models/ping_event.dart'; // NEW
 import 'package:sos1/services/api_service.dart';
-import 'package:sos1/services/emergency_heartbeat_service.dart';     // NEW
+import 'package:sos1/services/emergency_heartbeat_service.dart'; // NEW
 import 'package:sos1/services/emergency_sse_service.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
@@ -86,8 +86,10 @@ class EmergencyModeViewModel extends BaseViewModel {
   // ── Auto-call countdown (shown when dispatch fails) ───────────────────────
   Timer? _countdownTimer;
   final ReactiveValue<int?> _countdownSeconds = ReactiveValue<int?>(null);
+
   /// Non-null while the auto-call countdown is running (value = seconds left).
   int? get countdownSeconds => _countdownSeconds.value;
+
   /// The emergency number the countdown will dial.
   String? _pendingCallNumber;
   String? get pendingCallNumber => _pendingCallNumber;
@@ -113,8 +115,8 @@ class EmergencyModeViewModel extends BaseViewModel {
     _elapsedTimer?.cancel();
     _countdownTimer?.cancel();
     _resolutionSub?.cancel();
-    _pingSub?.cancel();              // NEW
-    _heartbeatService.stop();        // NEW — stop GPS immediately on dispose
+    _pingSub?.cancel(); // NEW
+    _heartbeatService.stop(); // NEW — stop GPS immediately on dispose
     _sseService.disconnect();
     _aiTts.removeListener(_onTtsUpdate);
     super.dispose();
@@ -206,6 +208,8 @@ class EmergencyModeViewModel extends BaseViewModel {
           latitude: reportLat,
           longitude: reportLng,
           locationDescription: _userLocation,
+          voiceTranscript:
+              _emergencyDescription.isNotEmpty ? _emergencyDescription : null,
         );
         // Success — capture IDs and connect SSE
         if (response != null) {
@@ -447,7 +451,6 @@ class EmergencyModeViewModel extends BaseViewModel {
     }
   }
 
-
   String _getEmergencyNumber(String type) {
     final numbers = {
       'cardiac': '14',
@@ -512,7 +515,8 @@ class EmergencyModeViewModel extends BaseViewModel {
 
   Future<void> endEmergency() async {
     _elapsedTimer?.cancel();
-    _heartbeatService.stop(); // NEW — stop GPS immediately when worker ends emergency
+    _heartbeatService
+        .stop(); // NEW — stop GPS immediately when worker ends emergency
 
     // Save to history
     await _saveToHistory();
@@ -528,13 +532,15 @@ class EmergencyModeViewModel extends BaseViewModel {
   Future<void> acknowledgePing() async {
     final id = _emergencyId;
     if (id == null) {
-      print('[EmergencyModeViewModel] acknowledgePing: _emergencyId is null, cannot ack');
+      print(
+          '[EmergencyModeViewModel] acknowledgePing: _emergencyId is null, cannot ack');
       return;
     }
     _pendingPing = null; // clear prompt immediately for responsiveness
     notifyListeners();
     final success = await _apiService.acknowledgePing(id);
-    print('[EmergencyModeViewModel] acknowledgePing result: $success for emergency $id');
+    print(
+        '[EmergencyModeViewModel] acknowledgePing result: $success for emergency $id');
   }
 
   Future<void> _saveToHistory() async {
