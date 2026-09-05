@@ -332,7 +332,7 @@ class EmergencyActionsService with ListenableServiceMixin {
     return '🆘 URGENCE SOS - $emergencyType\n'
         '${customMessage != null && customMessage.isNotEmpty ? '$customMessage\n' : ''}'
         '📍 Ma position: $locationText\n'
-        'Envoyé depuis SOS Algérie.';
+        'Envoyé depuis EchoAlert.';
   }
 }
 

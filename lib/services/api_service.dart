@@ -310,7 +310,7 @@ class ApiService {
   /// Silent-fails so a momentary network hiccup never surfaces to the user.
   Future<void> updateLocation(double latitude, double longitude) async {
     try {
-      await _dio.put('/users/location', data: {
+      await _dio.put('/users/heartbeat', data: {
         'latitude': latitude,
         'longitude': longitude,
       });

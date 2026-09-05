@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart'; // NEW — for timestamp formatting
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:stacked/stacked.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'emergency_mode_viewmodel.dart';
 import '../../../services/ai_emergency_assistant.dart';
+import '../../../utils/app_language_provider.dart';
 
 class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
   final String emergencyType;
@@ -35,14 +38,15 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
 
             // Dispatch failure banner (shown after all retries fail)
             if (viewModel.reportStatus == EmergencyReportStatus.failed)
-              _buildDispatchFailureBanner(),
+              _buildDispatchFailureBanner(context),
 
             // Auto-call countdown (shown only while countdown is running)
             if (viewModel.countdownSeconds != null)
-              _buildAutoCallCountdown(viewModel),
+              _buildAutoCallCountdown(context, viewModel),
 
             // Resolution banner — shown when officer resolves from dashboard
-            if (viewModel.resolution != null) _buildResolutionBanner(viewModel),
+            if (viewModel.resolution != null)
+              _buildResolutionBanner(context, viewModel),
 
             // NEW: "Are you OK?" ping prompt from the officer
             if (viewModel.pendingPing != null) _buildPingPrompt(viewModel),
@@ -64,7 +68,8 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
   }
 
   // ── Dispatch failure banner ─────────────────────────────────────────────
-  Widget _buildDispatchFailureBanner() {
+  Widget _buildDispatchFailureBanner(BuildContext context) {
+    final lp = Provider.of<LanguageProvider>(context, listen: false);
     return Container(
       width: double.infinity,
       margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
@@ -84,7 +89,7 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'DISPATCH INJOIGNABLE',
+                  lp.translate('dispatch_unreachable_title'),
                   style: TextStyle(
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w800,
@@ -94,9 +99,7 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  "Serveur non joignable après 3 tentatives. "
-                  "Suivez les instructions de l'assistant. "
-                  "Appel des secours automatique en cours...",
+                  lp.translate('dispatch_unreachable_body'),
                   style: TextStyle(
                     fontSize: 12.sp,
                     color: Colors.orange.shade200,
@@ -115,9 +118,15 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
   }
 
   // ── Auto-call countdown widget ─────────────────────────────────────────
-  Widget _buildAutoCallCountdown(EmergencyModeViewModel viewModel) {
+  Widget _buildAutoCallCountdown(
+      BuildContext context, EmergencyModeViewModel viewModel) {
+    final lp = Provider.of<LanguageProvider>(context, listen: false);
     final seconds = viewModel.countdownSeconds!;
     final number = viewModel.pendingCallNumber ?? '14';
+
+    final labelTemplate = lp.translate('autocall_label');
+    final label =
+        labelTemplate.replaceFirst('%s', number).replaceFirst('%d', '$seconds');
 
     return Container(
       width: double.infinity,
@@ -152,7 +161,7 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
-              'Appel du $number dans $seconds s...',
+              label,
               style: TextStyle(
                 fontSize: 13.sp,
                 fontWeight: FontWeight.w600,
@@ -171,7 +180,7 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
                 border: Border.all(color: Colors.white30),
               ),
               child: Text(
-                'ANNULER',
+                lp.translate('autocall_cancel'),
                 style: TextStyle(
                   fontSize: 11.sp,
                   fontWeight: FontWeight.w700,
@@ -189,7 +198,9 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
   }
 
   // NEW: resolution banner displayed when the safety officer resolves the emergency
-  Widget _buildResolutionBanner(EmergencyModeViewModel viewModel) {
+  Widget _buildResolutionBanner(
+      BuildContext context, EmergencyModeViewModel viewModel) {
+    final lp = Provider.of<LanguageProvider>(context, listen: false);
     final resolution = viewModel.resolution!;
 
     // Format the resolved timestamp if available
@@ -198,131 +209,138 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
       timeLabel = DateFormat('HH:mm').format(resolution.resolvedAt!.toLocal());
     }
 
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
-        ),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: const Color(0xFF4CAF50), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4CAF50).withOpacity(0.3),
-            blurRadius: 12,
-            spreadRadius: 2,
+    return Directionality(
+      textDirection: lp.isRTL ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Status row
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(6.w),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: const Color(0xFF4CAF50), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF4CAF50).withOpacity(0.3),
+              blurRadius: 12,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status row
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(6.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: Colors.white,
+                    size: 18.sp,
+                  ),
+                )
+                    .animate(onPlay: (c) => c.repeat())
+                    .scaleXY(
+                        begin: 1.0,
+                        end: 1.12,
+                        duration: 900.ms,
+                        curve: Curves.easeInOut)
+                    .then()
+                    .scaleXY(
+                        begin: 1.12,
+                        end: 1.0,
+                        duration: 900.ms,
+                        curve: Curves.easeInOut),
+                SizedBox(width: 10.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lp.translate('emergency_resolved_title'),
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white.withOpacity(0.8),
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      resolution.responderLabel,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
-                child: Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 18.sp,
-                ),
-              )
-                  .animate(onPlay: (c) => c.repeat())
-                  .scaleXY(
-                      begin: 1.0,
-                      end: 1.12,
-                      duration: 900.ms,
-                      curve: Curves.easeInOut)
-                  .then()
-                  .scaleXY(
-                      begin: 1.12,
-                      end: 1.0,
-                      duration: 900.ms,
-                      curve: Curves.easeInOut),
-              SizedBox(width: 10.w),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'URGENCE RÉSOLUE',
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white.withOpacity(0.8),
-                      letterSpacing: 2,
+                const Spacer(),
+                // ETA chip
+                if (resolution.etaMinutes != null)
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                    child: Text(
+                      lp
+                          .translate('emergency_eta')
+                          .replaceFirst('%d', '${resolution.etaMinutes}'),
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  SizedBox(height: 2.h),
+              ],
+            ),
+
+            // Timestamp row
+            if (timeLabel.isNotEmpty) ...[
+              SizedBox(height: 8.h),
+              Row(
+                children: [
+                  Icon(Icons.access_time, color: Colors.white54, size: 12.sp),
+                  SizedBox(width: 4.w),
                   Text(
-                    resolution.responderLabel,
+                    lp
+                        .translate('emergency_resolved_at')
+                        .replaceFirst('%s', timeLabel),
                     style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      fontSize: 11.sp,
+                      color: Colors.white54,
                     ),
                   ),
                 ],
               ),
-              const Spacer(),
-              // ETA chip
-              if (resolution.etaMinutes != null)
-                Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  child: Text(
-                    'ETA ${resolution.etaMinutes} min',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
             ],
-          ),
 
-          // Timestamp row
-          if (timeLabel.isNotEmpty) ...[
-            SizedBox(height: 8.h),
-            Row(
-              children: [
-                Icon(Icons.access_time, color: Colors.white54, size: 12.sp),
-                SizedBox(width: 4.w),
-                Text(
-                  'Résolu à $timeLabel',
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    color: Colors.white54,
-                  ),
+            // Notes row
+            if (resolution.notes != null && resolution.notes!.isNotEmpty) ...[
+              SizedBox(height: 6.h),
+              Text(
+                resolution.notes!,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.white70,
+                  fontStyle: FontStyle.italic,
                 ),
-              ],
-            ),
-          ],
-
-          // Notes row
-          if (resolution.notes != null && resolution.notes!.isNotEmpty) ...[
-            SizedBox(height: 6.h),
-            Text(
-              resolution.notes!,
-              style: TextStyle(
-                fontSize: 12.sp,
-                color: Colors.white70,
-                fontStyle: FontStyle.italic,
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     )
         .animate()
@@ -935,95 +953,100 @@ class _PingPromptBannerState extends State<_PingPromptBanner> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4A2C00), Color(0xFF7B4500)],
-        ),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: const Color(0xFFFFB300), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFFB300).withOpacity(0.35),
-            blurRadius: 14,
-            spreadRadius: 2,
+    final lp = Provider.of<LanguageProvider>(context, listen: false);
+    return Directionality(
+      textDirection: lp.isRTL ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4A2C00), Color(0xFF7B4500)],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              // Pulsing bell icon
-              Icon(Icons.notifications_active,
-                      color: const Color(0xFFFFB300), size: 22.sp)
-                  .animate(onPlay: (c) => c.repeat())
-                  .scaleXY(begin: 1.0, end: 1.15, duration: 600.ms)
-                  .then()
-                  .scaleXY(begin: 1.15, end: 1.0, duration: 600.ms),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: Text(
-                  'L\'officier demande: Êtes-vous OK?',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: const Color(0xFFFFB300), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFB300).withOpacity(0.35),
+              blurRadius: 14,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Pulsing bell icon
+                Icon(Icons.notifications_active,
+                        color: const Color(0xFFFFB300), size: 22.sp)
+                    .animate(onPlay: (c) => c.repeat())
+                    .scaleXY(begin: 1.0, end: 1.15, duration: 600.ms)
+                    .then()
+                    .scaleXY(begin: 1.15, end: 1.0, duration: 600.ms),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Text(
+                    lp.translate('ping_title'),
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              // Countdown circle
-              Container(
-                width: 40.w,
-                height: 40.w,
+                // Countdown circle
+                Container(
+                  width: 40.w,
+                  height: 40.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border:
+                        Border.all(color: const Color(0xFFFFB300), width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$_secondsLeft',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFFFFB300),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            GestureDetector(
+              onTap: () async {
+                _countdown?.cancel();
+                await widget.onAcknowledge();
+              },
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 12.h),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFFFB300), width: 2),
+                  color: const Color(0xFFFFB300),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Center(
                   child: Text(
-                    '$_secondsLeft',
+                    lp.translate('ping_ok_button'),
                     style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFFFFB300),
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                      letterSpacing: 1,
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          GestureDetector(
-            onTap: () async {
-              _countdown?.cancel();
-              await widget.onAcknowledge();
-            },
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 12.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFB300),
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Center(
-                child: Text(
-                  '✅  JE SUIS OK',
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     )
         .animate()

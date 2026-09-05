@@ -9,6 +9,6 @@ class PrivacyPolicyViewModel extends BaseViewModel {
 
   void openEmail() {
     // Add email intent
-    print('Opening support@sosalgerie.app');
+    print('Opening support@echoalert.app');
   }
 }

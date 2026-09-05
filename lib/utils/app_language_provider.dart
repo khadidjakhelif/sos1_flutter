@@ -94,7 +94,7 @@ class LanguageProvider extends ChangeNotifier {
       'footer_project': 'Projet PFE Master',
       'footer_university': 'Incubateur BBA University',
       'footer_credits':
-          'Développé par étudiants Master\nPour la sécurité des Algériens\n© 2026 SOS Algérie',
+          'Développé par étudiants Master\nPour la sécurité des Algériens\n© 2026 EchoAlert',
       'emergency_numbers_title': 'NUMÉROS D\'URGENCE - ALGÉRIE',
       'disclaimer_title': 'IMPORTANT - Avertissement',
       'disclaimer_body': '• L\'application fournit une ASSISTANCE uniquement\n'
@@ -144,6 +144,19 @@ class LanguageProvider extends ChangeNotifier {
       'delete': 'Supprimer',
       'stop_reading': 'Arrêter la lecture',
       'not_an_emergency': 'Pas une urgence',
+      // ── Emergency mode banners ─────────────────────────────────────────────
+      'dispatch_unreachable_title': 'DISPATCH INJOIGNABLE',
+      'dispatch_unreachable_body':
+          'Serveur non joignable après 3 tentatives. '
+          'Suivez les instructions de l\'assistant. '
+          'Appel des secours automatique en cours...',
+      'autocall_label': 'Appel du %s dans %d s...',
+      'autocall_cancel': 'ANNULER',
+      'emergency_resolved_title': 'URGENCE RÉSOLUE',
+      'emergency_resolved_at': 'Résolu à %s',
+      'emergency_eta': 'ETA %d min',
+      'ping_title': 'L\'officier demande : Êtes-vous OK ?',
+      'ping_ok_button': '✅  JE SUIS OK',
     },
     'العربية': {
       'back': 'عودة',
@@ -274,6 +287,19 @@ class LanguageProvider extends ChangeNotifier {
       'delete': 'حذف',
       'stop_reading': 'إيقاف القراءة',
       'not_an_emergency': 'ليست حالة طوارئ',
+      // ── Emergency mode banners ─────────────────────────────────────────────
+      'dispatch_unreachable_title': 'مركز الإرسال غير متاح',
+      'dispatch_unreachable_body':
+          'تعذّر الاتصال بالخادم بعد 3 محاولات. '
+          'اتّبع تعليمات المساعد. '
+          'جارٍ الاتصال التلقائي بالإسعاف...',
+      'autocall_label': 'الاتصال بـ %s خلال %d ث...',
+      'autocall_cancel': 'إلغاء',
+      'emergency_resolved_title': 'تمّ حلّ حالة الطوارئ',
+      'emergency_resolved_at': 'تمّ الحلّ في %s',
+      'emergency_eta': 'الوصول خلال %d دقيقة',
+      'ping_title': 'يسأل الضابط: هل أنت بخير؟',
+      'ping_ok_button': '✅  أنا بخير',
     },
     'English': {
       'back': 'Back',
@@ -408,6 +434,19 @@ class LanguageProvider extends ChangeNotifier {
       'delete': 'Delete',
       'stop_reading': 'Stop Reading',
       'not_an_emergency': 'Not an Emergency',
+      // ── Emergency mode banners ─────────────────────────────────────────────
+      'dispatch_unreachable_title': 'UNABLE TO REACH DISPATCH',
+      'dispatch_unreachable_body':
+          'Server unreachable after 3 attempts. '
+          'Follow the assistant\'s instructions. '
+          'Automatic emergency call in progress...',
+      'autocall_label': 'Calling %s in %d s...',
+      'autocall_cancel': 'CANCEL',
+      'emergency_resolved_title': 'EMERGENCY RESOLVED',
+      'emergency_resolved_at': 'Resolved at %s',
+      'emergency_eta': 'ETA %d min',
+      'ping_title': 'Officer asks: Are you OK?',
+      'ping_ok_button': '✅  I AM OK',
     },
   };
 

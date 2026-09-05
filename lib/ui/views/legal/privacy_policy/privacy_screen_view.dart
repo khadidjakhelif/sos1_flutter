@@ -236,7 +236,7 @@ class PrivacyPolicyView extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            const Text('support@sosalgerie.app'),
+            const Text('support@echoalert.app'),
             const SizedBox(height: 8),
             Text(
               lp.translate('contact_project'),

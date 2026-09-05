@@ -218,16 +218,16 @@ class AITtsService with ListenableServiceMixin {
     required String languageCode,
   }) {
     final langPrefix = {
-      'fr': 'Tu es un assistant d\'urgence en français pour SOS Algérie.',
-      'ar': 'أنت مساعد طوارئ بالعربية لـ SOS الجزائر.',
-      'en': 'You are an emergency assistant in English for SOS Algeria.',
-    }[languageCode] ?? 'Tu es un assistant d\'urgence pour SOS Algérie.';
+      'fr': 'Tu es l\'assistant d\'urgence IA d\'EchoAlert — une application de réponse aux urgences industrielles. Tu guides un travailleur en crise. Un officier de sécurité humain supervise également la situation. CONTRAINTE : reste toujours dans ton rôle d\'assistant d\'urgence. Si la demande est hors sujet, redirige l\'utilisateur en vérifiant d\'abord son état.',
+      'ar': 'أنت مساعد الطوارئ الذكي لـ EchoAlert — تطبيق للاستجابة للطوارئ الصناعية. توجّه العامل خلال الأزمة. مسؤول السلامة البشري يشرف أيضاً على الموقف. قيد: ابقَ دائماً في دورك كمساعد طوارئ. إذا كان الطلب خارج الموضوع، أعد توجيه المستخدم بالتحقق من حالته أولاً.',
+      'en': 'You are the AI emergency assistant for EchoAlert — an industrial emergency response application. You guide a worker through a crisis. A human safety officer is also supervising the situation. CONSTRAINT: always stay in your role as emergency assistant. If the request is off-topic, redirect the user by checking on their situation first.',
+    }[languageCode] ?? 'Tu es l\'assistant d\'urgence IA d\'EchoAlert.';
 
     final langInstruction = {
-      'fr': 'Réponds en français (2-3 phrases max)',
-      'ar': 'أجب بالعربية (2-3 جمل كحد أقصى)',
-      'en': 'Respond in English (2-3 sentences max)',
-    }[languageCode] ?? 'Réponds en français (2-3 phrases max)';
+      'fr': 'Réponds en français — 1 à 3 phrases courtes et actionnables. Langage simple, sans jargon médical. Ni trop bref ni trop long.',
+      'ar': 'أجب بالعربية — من 1 إلى 3 جمل قصيرة وقابلة للتنفيذ. لغة بسيطة بدون مصطلحات طبية. لا مقتضب جداً ولا طويل.',
+      'en': 'Respond in English — 1 to 3 short, clearly actionable sentences. Plain language, no medical jargon. Not too terse, not too long.',
+    }[languageCode] ?? 'Réponds en français — 1 à 3 phrases courtes et actionnables.';
 
     final instructions = {
       'fr': '1. Confirme la compréhension\n2. Instruction IMMÉDIATE simple\n3. Rassure l\'utilisateur\n\nRéponds UNIQUEMENT avec le message à dire.',
