@@ -9,9 +9,9 @@ import '../../../app/app.locator.dart';
 import '../../../app/app.router.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:hive/hive.dart';
+import 'dart:async';
 import '../../../models/medical_profile.dart';
-import '../../../utils/department_units.dart';
-
+import '../../../models/department.dart';
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
 
@@ -34,8 +34,49 @@ class _LoginViewState extends State<LoginView> {
   // Extra fields for registration
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  String? _selectedDepartment;
-  String? _selectedUnit;
+  
+  Department? _selectedDepartment;
+  Unit? _selectedUnit;
+  List<Department> _departments = [];
+  bool _isFetchingDepartments = false;
+  Timer? _debounceTimer;
+  final FocusNode _companyCodeFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _companyCodeFocus.addListener(() {
+      if (!_companyCodeFocus.hasFocus) {
+        _fetchDepartments(_companyCodeController.text);
+      }
+    });
+  }
+
+  Future<void> _fetchDepartments(String code) async {
+    final cleanCode = code.trim();
+    if (cleanCode.isEmpty) return;
+    setState(() => _isFetchingDepartments = true);
+    try {
+      final depts = await _apiService.getCompanyDepartments(cleanCode);
+      if (mounted) {
+        setState(() {
+          _departments = depts;
+          _selectedDepartment = null;
+          _selectedUnit = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _departments = [];
+          _selectedDepartment = null;
+          _selectedUnit = null;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isFetchingDepartments = false);
+    }
+  }
 
   Future<void> _submit() async {
     if (_employeeIdController.text.isEmpty ||
@@ -84,9 +125,8 @@ class _LoginViewState extends State<LoginView> {
           password: _passwordController.text,
           phone: _phoneController.text.trim(),
           companyCode: _companyCodeController.text.trim(),
-          unit: (_selectedDepartment != null && _selectedUnit != null)
-              ? DepartmentUnits.buildCode(_selectedDepartment!, _selectedUnit!)
-              : null,
+          departmentId: _selectedDepartment?.id,
+          unitId: _selectedUnit?.id,
         );
       }
 // NEW: if the response includes an existing medical profile, cache it locally
@@ -193,30 +233,37 @@ class _LoginViewState extends State<LoginView> {
                     _buildField(_phoneController, 'Téléphone', Icons.phone,
                         keyboardType: TextInputType.phone),
                     SizedBox(height: 16.h),
-                    _buildDropdown(
+                    _buildDropdown<Department>(
                       label: 'Département',
                       icon: Icons.domain,
                       value: _selectedDepartment,
-                      items: DepartmentUnits.departments,
+                      items: _departments,
+                      itemLabel: (d) => d.name,
                       onChanged: (value) {
                         setState(() {
                           _selectedDepartment = value;
-                          _selectedUnit =
-                              null; // reset unit when department changes
+                          _selectedUnit = null; 
                         });
                       },
                     ),
                     SizedBox(height: 16.h),
-                    _buildDropdown(
+                    _buildDropdown<Unit>(
                       label: 'Unité',
                       icon: Icons.group_work,
                       value: _selectedUnit,
-                      items: DepartmentUnits.unitsFor(_selectedDepartment),
+                      items: _selectedDepartment?.units ?? [],
+                      itemLabel: (u) => u.name,
                       onChanged: (value) =>
                           setState(() => _selectedUnit = value),
                     ),
                     SizedBox(height: 16.h),
                   ],
+                  
+                  if (!_isLoginMode && _isFetchingDepartments)
+                     Padding(
+                       padding: EdgeInsets.only(bottom: 16.h),
+                       child: const CircularProgressIndicator(),
+                     ),
 
                   // Common fields
                   _buildField(
@@ -224,7 +271,14 @@ class _LoginViewState extends State<LoginView> {
                   SizedBox(height: 16.h),
                   _buildField(
                       _companyCodeController, 'Code entreprise', Icons.business,
-                      hint: 'Ex: SONATRACH-2024'),
+                      hint: 'Ex: SONATRACH-2024',
+                      focusNode: _companyCodeFocus,
+                      onChanged: (val) {
+                        if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+                        _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+                          _fetchDepartments(val);
+                        });
+                      }),
                   SizedBox(height: 16.h),
                   _buildPasswordField(),
 
@@ -327,7 +381,7 @@ class _LoginViewState extends State<LoginView> {
 
   Widget _buildField(
       TextEditingController controller, String label, IconData icon,
-      {String? hint, TextInputType? keyboardType}) {
+      {String? hint, TextInputType? keyboardType, FocusNode? focusNode, ValueChanged<String>? onChanged}) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -336,6 +390,8 @@ class _LoginViewState extends State<LoginView> {
       ),
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
+        onChanged: onChanged,
         keyboardType: keyboardType,
         style: TextStyle(fontSize: 15.sp, color: Colors.white),
         decoration: InputDecoration(
@@ -380,12 +436,13 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget _buildDropdown({
+  Widget _buildDropdown<T>({
     required String label,
     required IconData icon,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
+    required T? value,
+    required List<T> items,
+    required String Function(T) itemLabel,
+    required ValueChanged<T?> onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -393,7 +450,7 @@ class _LoginViewState extends State<LoginView> {
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: AppColors.primaryRed.withOpacity(0.2)),
       ),
-      child: DropdownButtonFormField<String>(
+      child: DropdownButtonFormField<T>(
         value: value,
         dropdownColor: AppColors.surface,
         style: TextStyle(fontSize: 15.sp, color: Colors.white),
@@ -406,7 +463,7 @@ class _LoginViewState extends State<LoginView> {
               EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
         ),
         items: items
-            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+            .map((item) => DropdownMenuItem<T>(value: item, child: Text(itemLabel(item))))
             .toList(),
         onChanged: items.isEmpty ? null : onChanged,
       ),
@@ -420,6 +477,8 @@ class _LoginViewState extends State<LoginView> {
     _companyCodeController.dispose();
     _fullNameController.dispose();
     _phoneController.dispose();
+    _companyCodeFocus.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 }

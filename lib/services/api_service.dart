@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sos1/models/medical_profile.dart';
+import 'package:sos1/models/department.dart';
 
 class ApiService {
   static const String baseUrl =
@@ -64,7 +65,8 @@ class ApiService {
     required String password,
     required String phone,
     required String companyCode,
-    String? unit,
+    String? departmentId,
+    String? unitId,
   }) async {
     final response = await _dio.post('/auth/register', data: {
       'full_name': fullName,
@@ -72,13 +74,30 @@ class ApiService {
       'password': password,
       'phone': phone,
       'company_code': companyCode.toUpperCase(),
-      if (unit != null && unit.isNotEmpty) 'unit': unit,
+      if (departmentId != null) 'department_id': departmentId,
+      if (unitId != null) 'unit_id': unitId,
     });
     final data = response.data['data'];
     await _saveToken(data['access_token']);
     await _saveUserId(data['user']['id']);
     await _saveCompanyId(data['user']['company_id']);
     return data;
+  }
+
+  Future<List<Department>> getCompanyDepartments(String companyCode) async {
+    return _handleRequest(() async {
+      try {
+        final res = await _dio.get('/auth/company/$companyCode/departments');
+        if (res.data != null && res.data['data'] != null) {
+          final list = res.data['data'] as List;
+          return list.map((e) => Department.fromJson(e)).toList();
+        }
+        return <Department>[];
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) return <Department>[];
+        rethrow;
+      }
+    });
   }
 
   // ── Emergency ─────────────────────────────────────────────────────────────
