@@ -98,12 +98,7 @@ class _LoginViewState extends State<LoginView> {
       return;
     }
 
-    if (!_isLoginMode &&
-        (_selectedDepartment == null || _selectedUnit == null)) {
-      setState(() =>
-          _errorMessage = 'Veuillez sélectionner votre département et unité.');
-      return;
-    }
+    // Department and unit are optional — a company may not have any configured yet.
 
     setState(() {
       _isLoading = true;
@@ -233,29 +228,53 @@ class _LoginViewState extends State<LoginView> {
                     _buildField(_phoneController, 'Téléphone', Icons.phone,
                         keyboardType: TextInputType.phone),
                     SizedBox(height: 16.h),
-                    _buildDropdown<Department>(
-                      label: 'Département',
-                      icon: Icons.domain,
-                      value: _selectedDepartment,
-                      items: _departments,
-                      itemLabel: (d) => d.name,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedDepartment = value;
-                          _selectedUnit = null; 
-                        });
-                      },
-                    ),
-                    SizedBox(height: 16.h),
-                    _buildDropdown<Unit>(
-                      label: 'Unité',
-                      icon: Icons.group_work,
-                      value: _selectedUnit,
-                      items: _selectedDepartment?.units ?? [],
-                      itemLabel: (u) => u.name,
-                      onChanged: (value) =>
-                          setState(() => _selectedUnit = value),
-                    ),
+                    if (_departments.isEmpty && !_isFetchingDepartments)
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 16.h),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.domain, color: Colors.white38, size: 20.sp),
+                              SizedBox(width: 12.w),
+                              Text(
+                                'Département / Unité: non configurés',
+                                style: TextStyle(color: Colors.white38, fontSize: 13.sp),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (_departments.isNotEmpty) ...[
+                      _buildDropdown<Department>(
+                        label: 'Département (optionnel)',
+                        icon: Icons.domain,
+                        value: _selectedDepartment,
+                        items: _departments,
+                        itemLabel: (d) => d.name,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedDepartment = value;
+                            _selectedUnit = null;
+                          });
+                        },
+                      ),
+                      SizedBox(height: 16.h),
+                      _buildDropdown<Unit>(
+                        label: 'Unité (optionnel)',
+                        icon: Icons.group_work,
+                        value: _selectedUnit,
+                        items: _selectedDepartment?.units ?? [],
+                        itemLabel: (u) => u.name,
+                        onChanged: (value) =>
+                            setState(() => _selectedUnit = value),
+                      ),
+                    ],
                     SizedBox(height: 16.h),
                   ],
                   

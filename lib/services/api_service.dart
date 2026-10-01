@@ -6,7 +6,7 @@ import 'package:sos1/models/department.dart';
 
 class ApiService {
   static const String baseUrl =
-      'http://192.168.1.67:8000'; // use 10.0.2.2 for Android emulator, or your PC IP for real device
+      String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8000');
 
   static const String _tokenKey = 'jwt_token';
   static const String _userKey = 'current_user';
