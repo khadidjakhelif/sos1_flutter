@@ -228,6 +228,17 @@ class _LoginViewState extends State<LoginView> {
                     _buildField(_phoneController, 'Téléphone', Icons.phone,
                         keyboardType: TextInputType.phone),
                     SizedBox(height: 16.h),
+                    _buildField(
+                        _companyCodeController, 'Code entreprise', Icons.business,
+                        hint: 'Ex: SONATRACH-2024',
+                        focusNode: _companyCodeFocus,
+                        onChanged: (val) {
+                          if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+                          _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+                            _fetchDepartments(val);
+                          });
+                        }),
+                    SizedBox(height: 16.h),
                     if (_departments.isEmpty && !_isFetchingDepartments)
                       Padding(
                         padding: EdgeInsets.only(bottom: 16.h),
@@ -288,17 +299,13 @@ class _LoginViewState extends State<LoginView> {
                   _buildField(
                       _employeeIdController, 'Matricule employé', Icons.badge),
                   SizedBox(height: 16.h),
-                  _buildField(
-                      _companyCodeController, 'Code entreprise', Icons.business,
-                      hint: 'Ex: SONATRACH-2024',
-                      focusNode: _companyCodeFocus,
-                      onChanged: (val) {
-                        if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-                        _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-                          _fetchDepartments(val);
-                        });
-                      }),
-                  SizedBox(height: 16.h),
+                  // In register mode, company code is above dept/unit — don't duplicate it here
+                  if (_isLoginMode)
+                    _buildField(
+                        _companyCodeController, 'Code entreprise', Icons.business,
+                        hint: 'Ex: SONATRACH-2024',
+                        focusNode: _companyCodeFocus),
+                  if (_isLoginMode) SizedBox(height: 16.h),
                   _buildPasswordField(),
 
                   // Error message

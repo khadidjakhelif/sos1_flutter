@@ -19,11 +19,13 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
     VoiceAssistantViewModel viewModel,
     Widget? child,
   ) {
-    return Consumer<LanguageProvider>(
-      builder: (context, languageProvider, child) {
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          body: SafeArea(
+    return _AppLifecycleObserver(
+      viewModel: viewModel,
+      child: Consumer<LanguageProvider>(
+        builder: (context, languageProvider, child) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: SafeArea(
             child: Column(
               children: [
                 // Minimal Header
@@ -576,4 +578,50 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
   void onViewModelReady(VoiceAssistantViewModel viewModel) {
     viewModel.initialize();
   }
+}
+
+// ─── App lifecycle observer ───────────────────────────────────────────────────
+// Stops TTS and mic when user backgrounds the app (home button, lock screen,
+// incoming call, notification pull-down, or any other interruption).
+
+class _AppLifecycleObserver extends StatefulWidget {
+  final VoiceAssistantViewModel viewModel;
+  final Widget child;
+
+  const _AppLifecycleObserver({
+    required this.viewModel,
+    required this.child,
+  });
+
+  @override
+  State<_AppLifecycleObserver> createState() => _AppLifecycleObserverState();
+}
+
+class _AppLifecycleObserverState extends State<_AppLifecycleObserver>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      // User left the app — stop TTS and mic immediately.
+      widget.viewModel.onAppPaused();
+    }
+    // We intentionally do NOT auto-resume on AppLifecycleState.resumed —
+    // the user must tap the mic explicitly when they return.
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

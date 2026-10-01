@@ -84,9 +84,10 @@ class VoiceAssistantViewModel extends BaseViewModel {
       final companyId = await _apiService.getCompanyId();
       if (token != null && companyId != null) {
         await _sseService.connect(companyId, token);
-        
+
         // Fetch initially active emergencies so we don't miss any that started before we opened the app
-        final activeEmergencies = await _apiService.getActiveCompanyEmergencies();
+        final activeEmergencies =
+            await _apiService.getActiveCompanyEmergencies();
         for (final emg in activeEmergencies) {
           final id = emg['id'] as String?;
           if (id != null) _workerLocationService.start(id);
@@ -103,8 +104,10 @@ class VoiceAssistantViewModel extends BaseViewModel {
       print('Failed to setup SSE in VoiceAssistant: $e');
     }
 
-    // Speak AI greeting after a short delay
+    // Speak AI greeting after login — this screen only opens after a successful
+    // login, so the greeting plays once per session when the user first arrives.
     Future.delayed(const Duration(milliseconds: 300), () async {
+      if (_disposed) return;
       final greeting = await _aiTtsService.generateEmergencyResponse(
         emergencyType: 'greeting',
         userMessage: 'initial_greeting',
@@ -317,6 +320,8 @@ class VoiceAssistantViewModel extends BaseViewModel {
   @override
   void dispose() {
     _disposed = true; // guard delayed callbacks
+    _aiTtsService.stop(); // stop speaking immediately on navigate-away
+    _aiSpeechService.stopListening(); // stop mic if active
     _locationTracking.stop();
     _intentSubscription?.cancel();
     _aiSpeechService.removeListener(_onSpeechUpdate);
@@ -327,6 +332,14 @@ class VoiceAssistantViewModel extends BaseViewModel {
     _workerLocationService.stopAll();
     _sseService.disconnect();
     super.dispose();
+  }
+
+  /// Called by the view when the app goes to the background (paused/inactive).
+  /// Stops TTS and listening so the assistant is silent while backgrounded.
+  Future<void> onAppPaused() async {
+    await _aiTtsService.stop();
+    await _aiSpeechService.stopListening();
+    notifyListeners();
   }
 }
 
