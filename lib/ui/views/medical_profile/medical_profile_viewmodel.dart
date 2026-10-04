@@ -8,13 +8,21 @@ import 'package:sos1/utils/app_language_provider.dart';
 import '../../../app/app.router.dart';
 import '../../../services/language_service.dart';
 import 'package:provider/provider.dart';
+import 'package:sos1/services/api_service.dart';
 
 class MedicalProfileViewModel extends BaseViewModel {
   final _medicalProfileService = locator<MedicalProfileService>();
   final _navigationService = locator<NavigationService>();
   final LanguageService lp = locator<LanguageService>();
 
+  final _apiService = locator<ApiService>();
+  
+  String? _departmentName;
+  String? _unitName;
+
   MedicalProfile? get profile => _medicalProfileService.profile;
+  String? get departmentName => _departmentName;
+  String? get unitName => _unitName;
 
   Future<void> initialize() async {
     setBusy(true);
@@ -22,6 +30,16 @@ class MedicalProfileViewModel extends BaseViewModel {
     _medicalProfileService.addListener(() {
       notifyListeners();
     });
+
+    try {
+      final userMap = await _apiService.getCurrentUser();
+      if (userMap != null) {
+        _departmentName = userMap['department_name'];
+        _unitName = userMap['unit_name'];
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch user data: $e');
+    }
 
     setBusy(false);
   }

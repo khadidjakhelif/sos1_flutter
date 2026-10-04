@@ -64,9 +64,9 @@ class EmergencyActionsService with ListenableServiceMixin {
     }
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // CALL — dials the actual number passed in
-  // ─────────────────────────────────────────
+  // ----
   Future<bool> callNumber(String number) async {
     try {
       final cleanNumber = number.replaceAll(RegExp(r'[\s\-\(\)]'), '');
@@ -74,24 +74,24 @@ class EmergencyActionsService with ListenableServiceMixin {
 
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
-        _lastActionStatus.value = '📞 Appel lancé vers $cleanNumber';
+        _lastActionStatus.value = 'Appel lancé vers $cleanNumber';
         notifyListeners();
         return true;
       } else {
-        _lastActionStatus.value = '❌ Impossible de lancer l\'appel';
+        _lastActionStatus.value = 'Impossible de lancer l\'appel';
         notifyListeners();
         return false;
       }
     } catch (e) {
-      _lastActionStatus.value = '❌ Erreur d\'appel: $e';
+      _lastActionStatus.value = 'Erreur d\'appel: $e';
       notifyListeners();
       return false;
     }
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // SMS — sends directly in background via native channel
-  // ─────────────────────────────────────────
+  // ----
 
   /// Send SOS SMS with location to ALL emergency contacts that have SMS enabled
   Future<SmsResult> sendSOSToAllContacts({
@@ -101,7 +101,7 @@ class EmergencyActionsService with ListenableServiceMixin {
     // 1. Check SMS permission
     final hasPermission = await _requestSmsPermission();
     if (!hasPermission) {
-      _lastActionStatus.value = '❌ Permission SMS refusée';
+      _lastActionStatus.value = 'Permission SMS refusée';
       notifyListeners();
       return SmsResult(success: false, sentCount: 0, failedCount: 0, message: 'Permission SMS refusée');
     }
@@ -119,7 +119,7 @@ class EmergencyActionsService with ListenableServiceMixin {
         .toList();
 
     if (smsContacts.isEmpty) {
-      _lastActionStatus.value = '⚠️ Aucun contact SMS activé';
+      _lastActionStatus.value = 'Aucun contact SMS activé';
       notifyListeners();
       return SmsResult(success: false, sentCount: 0, failedCount: 0, message: 'Aucun contact avec alerte SMS activée');
     }
@@ -138,7 +138,7 @@ class EmergencyActionsService with ListenableServiceMixin {
       }
     }
 
-    _lastActionStatus.value = '✅ SMS envoyé à $sentCount contact(s)${failedCount > 0 ? ', $failedCount échec(s)' : ''}';
+    _lastActionStatus.value = 'SMS envoyé à $sentCount contact(s)${failedCount > 0 ? ', $failedCount échec(s)' : ''}';
     notifyListeners();
 
     return SmsResult(
@@ -174,9 +174,9 @@ class EmergencyActionsService with ListenableServiceMixin {
     );
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // AUTO-CALL contacts with autoCallEnabled
-  // ─────────────────────────────────────────
+  // ----
   Future<void> autoCallFirstContact() async {
     final contactsService = locator<ContactsService>();
     final autoCallContacts = contactsService.personalContacts
@@ -188,9 +188,9 @@ class EmergencyActionsService with ListenableServiceMixin {
     }
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // FULL SOS SEQUENCE: SMS all + Call first
-  // ─────────────────────────────────────────
+  // ----
   Future<void> triggerFullSOS({
     required String emergencyType,
     String? customMessage,
@@ -205,9 +205,9 @@ class EmergencyActionsService with ListenableServiceMixin {
     await autoCallFirstContact();
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // GPS HELPERS
-  // ─────────────────────────────────────────
+  // ----
   Future<String> _getLocationText() async {
     // 1. Request location permission explicitly
     await _requestLocationPermission();
@@ -315,9 +315,9 @@ class EmergencyActionsService with ListenableServiceMixin {
     }
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // PERMISSION HELPERS
-  // ─────────────────────────────────────────
+  // ----
   Future<bool> _requestSmsPermission() async {
     var status = await Permission.sms.status;
     if (status.isGranted) return true;
@@ -325,13 +325,13 @@ class EmergencyActionsService with ListenableServiceMixin {
     return status.isGranted;
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // MESSAGE BUILDER
-  // ─────────────────────────────────────────
+  // ----
   String _buildSosMessage(String emergencyType, String locationText, String? customMessage) {
     return '🆘 URGENCE SOS - $emergencyType\n'
         '${customMessage != null && customMessage.isNotEmpty ? '$customMessage\n' : ''}'
-        '📍 Ma position: $locationText\n'
+        ' Ma position: $locationText\n'
         'Envoyé depuis EchoAlert.';
   }
 }

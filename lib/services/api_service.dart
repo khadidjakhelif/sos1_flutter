@@ -40,7 +40,7 @@ class ApiService {
     ));
   }
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
+  // -- Auth ----
 
   Future<Map<String, dynamic>> login({
     required String employeeId,
@@ -100,7 +100,7 @@ class ApiService {
     });
   }
 
-  // ── Emergency ─────────────────────────────────────────────────────────────
+  // -- Emergency ----
 
   // CHANGED: returns the created emergency data (id, company_id) so callers
   // can set up SSE subscriptions. Still silently fails on network error.
@@ -190,7 +190,7 @@ class ApiService {
     }
   }
 
-  // ── Worker Heartbeat ──────────────────────────────────────────────────────
+  // -- Worker Heartbeat ----
 
   Future<void> updateUserHeartbeat(double lat, double lng) async {
     await _dio.put(
@@ -202,7 +202,7 @@ class ApiService {
     );
   }
 
-  // ── Medical Profile ───────────────────────────────────────────────────────
+  // -- Medical Profile ----
 
   Future<void> syncMedicalProfile(MedicalProfile profile) async {
     await _dio.put('/users/medical-profile', data: {
@@ -220,6 +220,20 @@ class ApiService {
   Future<Map<String, dynamic>?> getMedicalProfile(String userId) async {
     try {
       final res = await _dio.get('/medical/$userId');
+      return res.data?['data'] as Map<String, dynamic>?;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  /// Fetches the current logged-in user's full profile from the backend.
+  /// Returns the user map including department_id, unit_id, department name, unit name.
+  Future<Map<String, dynamic>?> getCurrentUser() async {
+    try {
+      final userId = await getUserId();
+      if (userId == null) return null;
+      final res = await _dio.get('/users/$userId');
       return res.data?['data'] as Map<String, dynamic>?;
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return null;
@@ -249,7 +263,7 @@ class ApiService {
     });
   }
 
-  // ── Chat ──────────────────────────────────────────────────────────────────
+  // -- Chat ----
 
   Future<List<Map<String, dynamic>>> getMessages(String emergencyId) async {
     return _handleRequest(() async {
@@ -261,7 +275,7 @@ class ApiService {
     });
   }
 
-  // ── Keep alive ────────────────────────────────────────────────────────────
+  // -- Keep alive ----
 
   Future<void> sendTextMessage(String emergencyId, String content) async {
     await _handleRequest(() async {
@@ -299,7 +313,7 @@ class ApiService {
     });
   }
 
-  // ── FCM ───────────────────────────────────────────────────────────────────
+  // -- FCM ----
 
   Future<void> registerFcmToken(String token, String deviceInfo) async {
     try {
@@ -322,7 +336,7 @@ class ApiService {
     } catch (_) {} // silent fail
   }
 
-  // ── Live location ─────────────────────────────────────────────────────────────
+  // -- Live location ----
 
   /// Reports the worker's current GPS position to the backend.
   /// Called periodically by [LocationTrackingService] while the app is foregrounded.
@@ -336,7 +350,7 @@ class ApiService {
     } catch (_) {} // silent fail — do not interrupt user workflow
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // -- Helpers ----
 
   /// Executes [request] and returns its result.
   /// Re-throws [DioException] so callers can handle HTTP errors,
@@ -354,7 +368,7 @@ class ApiService {
     }
   }
 
-  // ── Token management ──────────────────────────────────────────────────────
+  // -- Token management ----
 
   Future<void> _saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();

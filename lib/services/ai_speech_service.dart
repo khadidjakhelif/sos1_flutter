@@ -47,7 +47,7 @@ class AISpeechService with ListenableServiceMixin {
   }
 
   void _onLanguageChanged() {
-    print('🌐 Language changed to: ${_languageService.currentLanguage.code}');
+    print(' Language changed to: ${_languageService.currentLanguage.code}');
     notifyListeners();
   }
 
@@ -56,32 +56,32 @@ class AISpeechService with ListenableServiceMixin {
   }
 
   Future<void> initialize() async {
-    print('🔊 Initializing speech...');
+    print(' Initializing speech...');
 
     try {
       _isAvailable.value = await _speechToText.initialize(
         onError: (error) {
-          print('❌ Speech ERROR: $error');
+          print(' Speech ERROR: $error');
         },
         onStatus: (status) {
-          print('📡 Speech STATUS: $status');
+          print(' Speech STATUS: $status');
           if (status == 'notListening') {
             _isListening.value = false;
             notifyListeners();
           }
         },
       );
-      print('✅ Speech available: ${_isAvailable.value}');
+      print(' Speech available: ${_isAvailable.value}');
     } catch (e) {
-      print('💥 Speech init FAILED: $e');
+      print(' Speech init FAILED: $e');
     }
     //Initializing AI provider
     try {
-      print('🤖 Initializing AI Provider...');
+      print(' Initializing AI Provider...');
       await _aiProvider.initialize();
-      print('✅ AI Provider initialized successfully: ${_aiProvider.providerName}');
+      print(' AI Provider initialized successfully: ${_aiProvider.providerName}');
     } catch (e) {
-      print('❌ AI Provider initialization error: $e');
+      print(' AI Provider initialization error: $e');
     }
 
     notifyListeners();
@@ -106,19 +106,19 @@ class AISpeechService with ListenableServiceMixin {
   }
 
   Future<void> startListening() async {
-    print('🎤 === START LISTENING ===');
+    print(' === START LISTENING ===');
 
     if (!_isAvailable.value) {
-      print('⚠️  Not available, initializing...');
+      print('️  Not available, initializing...');
       await initialize();
       if (!_isAvailable.value) {
-        print('❌ Cannot initialize speech');
+        print(' Cannot initialize speech');
         return;
       }
     }
 
     if (_isListening.value) {
-      print('⏹️  Already listening, stopping first...');
+      print('️  Already listening, stopping first...');
       await stopListening();
       return;
     }
@@ -131,7 +131,7 @@ class AISpeechService with ListenableServiceMixin {
     // DYNAMIC LOCALE
     final localeId = _languageService.currentLanguage.locale;
     //final localeId = _getLocaleFromLanguage(_languageService.currentLanguage);
-    print('👂 Listening in: $localeId (${_languageService.currentLanguage.displayName})');
+    print(' Listening in: $localeId (${_languageService.currentLanguage.displayName})');
 
     await _speechToText.listen(
       onResult: _onSpeechResult,
@@ -143,10 +143,10 @@ class AISpeechService with ListenableServiceMixin {
   }
 
   Future<void> stopListening() async {
-    print('🛑 === STOP LISTENING ===');
+    print(' === STOP LISTENING ===');
     _isListening.value = false;
     await _speechToText.stop();
-    print('📝 Final words: "${_recognizedWords.value}"');
+    print(' Final words: "${_recognizedWords.value}"');
     notifyListeners();
   }
 
@@ -154,22 +154,22 @@ class AISpeechService with ListenableServiceMixin {
     final words = result.recognizedWords;
     final isFinal = result.finalResult;
 
-    print('🗣️  Words: "$words" | Final: $isFinal');
+    print('️  Words: "$words" | Final: $isFinal');
 
     _lastWords.value = words;
 
     if (isFinal) {
-      print('✅ FINAL RESULT: "$words"');
+      print(' FINAL RESULT: "$words"');
       _recognizedWords.value = words;
       _isListening.value = false;
       //Test
-      print('🚀 Calling _processWithAI with text: "${result.recognizedWords}"');
+      print(' Calling _processWithAI with text: "${result.recognizedWords}"');
       //
       _processWithAI(words);
       //Test
-      print('📞 _processWithAI called');
+      print(' _processWithAI called');
     } else {
-      print('⏳ PARTIAL: "$words"');
+      print(' PARTIAL: "$words"');
       //_detectEmergencyQuick(words);
     }
 
@@ -240,8 +240,8 @@ class AISpeechService with ListenableServiceMixin {
 
   /// AI-powered emergency detection
   Future<void> _processWithAI(String text) async {
-    print('🤖 ========== _processWithAI STARTED ==========');
-    print('📝 Input text: "$text"');
+    print(' ========== _processWithAI STARTED ==========');
+    print(' Input text: "$text"');
 
     _isProcessing.value = true;
     notifyListeners();
@@ -286,7 +286,7 @@ Réponds UNIQUEMENT en JSON:
 
   EmergencyIntent _parseAIResponse(String aiResponse, String originalText) {
     try {
-      print('🔍 Parsing AI response...');
+      print(' Parsing AI response...');
 
       String jsonStr = aiResponse;
       if (aiResponse.contains('```json')) {
@@ -300,7 +300,7 @@ Réponds UNIQUEMENT en JSON:
       final severity = _extractNumberValue(jsonStr, '"severity"') ?? 5;
       final needsImmediate = jsonStr.contains('"needsImmediateResponse": true');
 
-      print('📊 Extracted values:');
+      print(' Extracted values:');
       print('   type: $type');
       print('   severity: $severity');
       print('   needsImmediate: $needsImmediate');
@@ -320,7 +320,7 @@ Réponds UNIQUEMENT en JSON:
         isQuickDetection: false,
       );
     } catch (e) {
-      print('❌ Parsing error: $e');
+      print(' Parsing error: $e');
       return EmergencyIntent(
         type: 'medical',
         confidence: 0.75,

@@ -112,14 +112,14 @@ class _SosOrbState extends State<SosOrb> with TickerProviderStateMixin {
             return Stack(
               alignment: Alignment.center,
               children: [
-                // ── Sound wave ripples (only when listening) ──
+                // -- Sound wave ripples (only when listening) --
                 if (widget.isListening) ...[
                   _buildRippleRing(_ripple1.value, orbSize, 0),
                   _buildRippleRing(_ripple2.value, orbSize, 1),
                   _buildRippleRing(_ripple3.value, orbSize, 2),
                 ],
 
-                // ── Ambient glow ──
+                // -- Ambient glow --
                 Container(
                   width: orbSize * 1.4,
                   height: orbSize * 1.4,
@@ -138,7 +138,7 @@ class _SosOrbState extends State<SosOrb> with TickerProviderStateMixin {
                   ),
                 ),
 
-                // ── Sound wave bars (circular, around the orb) ──
+                // -- Sound wave bars (circular, around the orb) --
                 if (widget.isListening)
                   CustomPaint(
                     size: Size(orbSize * 1.35, orbSize * 1.35),
@@ -148,7 +148,7 @@ class _SosOrbState extends State<SosOrb> with TickerProviderStateMixin {
                     ),
                   ),
 
-                // ── Main 3D orb ──
+                // -- Main 3D orb --
                 Transform.scale(
                   scale: breatheScale,
                   child: Container(
@@ -232,7 +232,7 @@ class _SosOrbState extends State<SosOrb> with TickerProviderStateMixin {
                   ),
                 ),
 
-                // ── Status text below orb ──
+                // -- Status text below orb --
                 Positioned(
                   bottom: orbSize * 0.15,
                   child: AnimatedSwitcher(

@@ -1,78 +1,49 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:stacked/stacked.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 import 'emergency_contacts_viewmodel.dart';
 import '../../../utils/app_colors.dart';
-import '../../../models/emergency_contact.dart';
+import '../../../utils/app_language_provider.dart';
+import '../../../models/medical_profile.dart';
 
 class EmergencyContactsView extends StackedView<EmergencyContactsViewModel> {
   const EmergencyContactsView({super.key});
 
   @override
-  Widget builder(
-    BuildContext context,
-    EmergencyContactsViewModel viewModel,
-    Widget? child,
-  ) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(viewModel),
-            
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Public Services Section
-                    _buildSectionTitle('SERVICES PUBLICS'),
-                    SizedBox(height: 16.h),
-                    ...viewModel.publicServices.map((service) => _buildPublicServiceCard(service, viewModel)),
-                    
-                    SizedBox(height: 32.h),
-                    
-                    // Personal Contacts Section
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20.w),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildSectionTitle('CONTACTS PERSONNELS'),
-                          _buildAddButton(viewModel),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    ...viewModel.personalContacts.map((contact) => _buildPersonalContactCard(contact, viewModel)),
-                    
-                    SizedBox(height: 24.h),
-                    
-                    // Info Card
-                    _buildInfoCard(),
-                    
-                    SizedBox(height: 24.h),
-                    
-                    // SOS Button
-                    _buildSOSButton(viewModel),
-                    
-                    SizedBox(height: 32.h),
-                  ],
+  Widget builder(BuildContext context, EmergencyContactsViewModel viewModel, Widget? child) {
+    return Consumer<LanguageProvider>(
+      builder: (context, lp, _) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(viewModel, lp),
+                Expanded(
+                  child: viewModel.isBusy
+                      ? const Center(child: CircularProgressIndicator())
+                      : _buildBody(context, viewModel, lp),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => _showContactBottomSheet(context, viewModel, lp),
+            backgroundColor: AppColors.primaryRed,
+            icon: const Icon(Icons.person_add, color: Colors.white),
+            label: Text(
+              lp.translate('ice_add_contact'),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader(EmergencyContactsViewModel viewModel) {
+  Widget _buildHeader(EmergencyContactsViewModel viewModel, LanguageProvider lp) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
       child: Row(
@@ -81,34 +52,16 @@ class EmergencyContactsView extends StackedView<EmergencyContactsViewModel> {
             onTap: viewModel.goBack,
             child: Row(
               children: [
-                Icon(
-                  Icons.arrow_back_ios,
-                  color: Colors.white,
-                  size: 20.sp,
-                ),
+                Icon(Icons.arrow_back_ios, color: Colors.white, size: 20.sp),
                 SizedBox(width: 4.w),
-                Text(
-                  'Retour',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
+                Text(lp.translate('back'),
+                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w500, color: Colors.white)),
               ],
             ),
           ),
           const Spacer(),
-          Text(
-            "Contacts\nd'Urgence",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              height: 1.2,
-            ),
-          ),
+          Text(lp.translate('emergency_contacts'),
+              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: Colors.white)),
           const Spacer(),
           SizedBox(width: 60.w),
         ],
@@ -116,414 +69,323 @@ class EmergencyContactsView extends StackedView<EmergencyContactsViewModel> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textMuted,
-          letterSpacing: 2,
-        ),
+  Widget _buildBody(BuildContext context, EmergencyContactsViewModel viewModel, LanguageProvider lp) {
+    final contacts = viewModel.iceContacts;
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.only(bottom: 100.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInfoBanner(lp),
+          SizedBox(height: 24.h),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            child: Text(lp.translate('ice_contacts_section'),
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted, letterSpacing: 2)),
+          ),
+          SizedBox(height: 16.h),
+          if (contacts.isEmpty)
+            _buildEmptyState(lp)
+          else
+            ...contacts.asMap().entries.map((e) => _buildContactCard(context, e.value, viewModel, lp, e.key)),
+          if (viewModel.errorMessage != null)
+            Padding(
+              padding: EdgeInsets.all(16.w),
+              child: Container(
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryRed.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: AppColors.primaryRed.withOpacity(0.3)),
+                ),
+                child: Text(viewModel.errorMessage!,
+                    style: TextStyle(color: AppColors.primaryRed, fontSize: 13.sp)),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _buildAddButton(EmergencyContactsViewModel viewModel) {
-    return GestureDetector(
-      onTap: viewModel.addContact,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildInfoBanner(LanguageProvider lp) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A2A3A),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFF2A4A6A)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24.w, height: 24.w,
+            decoration: const BoxDecoration(color: Color(0xFF2196F3), shape: BoxShape.circle),
+            child: Icon(Icons.info, color: Colors.white, size: 14.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(lp.translate('ice_info_banner'),
+                style: TextStyle(fontSize: 13.sp, color: const Color(0xFF90CAF9), height: 1.5)),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 300.ms);
+  }
+
+  Widget _buildEmptyState(LanguageProvider lp) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 48.h),
+      child: Center(
+        child: Column(
           children: [
-            Icon(
-              Icons.add_circle,
-              color: AppColors.primaryRed,
-              size: 18.sp,
-            ),
-            SizedBox(width: 6.w),
-            Text(
-              'AJOUTER',
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryRed,
-              ),
-            ),
+            Icon(Icons.people_outline, color: AppColors.textMuted, size: 64.sp),
+            SizedBox(height: 16.h),
+            Text(lp.translate('ice_no_contacts'),
+                style: TextStyle(fontSize: 16.sp, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+            SizedBox(height: 8.h),
+            Text(lp.translate('ice_no_contacts_subtitle'),
+                style: TextStyle(fontSize: 13.sp, color: AppColors.textMuted.withOpacity(0.7)),
+                textAlign: TextAlign.center),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPublicServiceCard(PublicService service, EmergencyContactsViewModel viewModel) {
+  Widget _buildContactCard(BuildContext context, ICEContact contact,
+      EmergencyContactsViewModel viewModel, LanguageProvider lp, int index) {
+    final colors = [
+      const Color(0xFF9C27B0), const Color(0xFFFF9800),
+      const Color(0xFF4CAF50), const Color(0xFF2196F3), const Color(0xFFE91E63),
+    ];
+    final avatarColor = colors[contact.name.length % colors.length];
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
       padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
+      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16.r)),
       child: Row(
         children: [
-          // Icon
           Container(
-            width: 50.w,
-            height: 50.w,
-            decoration: BoxDecoration(
-              color: _getServiceColor(service.type).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Icon(
-              _getServiceIcon(service.type),
-              color: _getServiceColor(service.type),
-              size: 28.sp,
+            width: 52.w, height: 52.w,
+            decoration: BoxDecoration(color: avatarColor, shape: BoxShape.circle),
+            child: Center(
+              child: Text(
+                contact.name.isNotEmpty ? contact.name[0].toUpperCase() : '?',
+                style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w700, color: Colors.white),
+              ),
             ),
           ),
           SizedBox(width: 16.w),
-          
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  service.name,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
+                Text(contact.name,
+                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: Colors.white)),
+                SizedBox(height: 2.h),
+                Text(contact.relation,
+                    style: TextStyle(fontSize: 12.sp, color: AppColors.primaryRed, fontWeight: FontWeight.w600)),
                 SizedBox(height: 4.h),
-                Text(
-                  '${service.shortNumber} / ${service.fullNumber}',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryRed,
-                  ),
-                ),
+                Row(children: [
+                  Icon(Icons.phone, color: AppColors.textMuted, size: 14.sp),
+                  SizedBox(width: 4.w),
+                  Text(contact.phoneNumber,
+                      style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary)),
+                ]),
               ],
             ),
           ),
-          
-          // Call Button
-          GestureDetector(
-            onTap: () => viewModel.callPublicService(service.id),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-              decoration: BoxDecoration(
-                color: AppColors.primaryRed,
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Text(
-                'APPEL',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ).animate()
-      .fadeIn(duration: 300.ms)
-      .slideX(begin: -0.1, end: 0);
-  }
-
-  Widget _buildPersonalContactCard(EmergencyContact contact, EmergencyContactsViewModel viewModel) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Column(
-        children: [
-          // Header Row
-          Row(
-            children: [
-              // Avatar
-              Container(
-                width: 48.w,
-                height: 48.w,
-                decoration: BoxDecoration(
-                  color: _getAvatarColor(contact.name),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    contact.name[0].toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 16.w),
-              
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      contact.name,
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      contact.phoneNumber,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Delete Button
-              GestureDetector(
-                onTap: () => viewModel.deleteContact(contact.id),
-                child: Icon(
-                  Icons.delete_outline,
-                  color: AppColors.textMuted,
-                  size: 24.sp,
-                ),
-              ),
-            ],
-          ),
-          
-          SizedBox(height: 16.h),
-          
-          // Toggles Row
-          Row(
-            children: [
-              // SMS Alert Toggle
-              Expanded(
-                child: _buildToggle(
-                  'ALERT SMS',
-                  contact.smsAlertEnabled ? 'ACTIF' : 'OFF',
-                  contact.smsAlertEnabled,
-                  (value) => viewModel.toggleSmsAlert(contact.id, value),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              
-              // Auto Call Toggle
-              Expanded(
-                child: _buildToggle(
-                  'APPEL AUTO',
-                  contact.autoCallEnabled ? 'ACTIF' : 'OFF',
-                  contact.autoCallEnabled,
-                  (value) => viewModel.toggleAutoCall(contact.id, value),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ).animate()
-      .fadeIn(duration: 300.ms)
-      .slideY(begin: 0.1, end: 0);
-  }
-
-  Widget _buildToggle(String label, String status, bool value, Function(bool) onChanged) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
           Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textMuted,
+              GestureDetector(
+                onTap: () => _showContactBottomSheet(context, viewModel, lp, existing: contact, index: index),
+                child: Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(8.r)),
+                  child: Icon(Icons.edit_outlined, color: Colors.white70, size: 20.sp),
                 ),
               ),
-              Text(
-                status,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                  color: value ? AppColors.primaryRed : AppColors.textMuted,
+              SizedBox(height: 8.h),
+              GestureDetector(
+                onTap: () => _confirmDelete(context, viewModel, lp, index),
+                child: Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryRed.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Icon(Icons.delete_outline, color: AppColors.primaryRed, size: 20.sp),
                 ),
               ),
             ],
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppColors.primaryRed,
-            activeTrackColor: AppColors.primaryRed.withOpacity(0.3),
-            inactiveThumbColor: Colors.grey,
-            inactiveTrackColor: Colors.grey.withOpacity(0.3),
+        ],
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);
+  }
+
+  void _confirmDelete(BuildContext context, EmergencyContactsViewModel viewModel,
+      LanguageProvider lp, int index) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        title: Text(lp.translate('ice_delete_title'),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        content: Text(lp.translate('ice_delete_confirm'),
+            style: TextStyle(color: AppColors.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(lp.translate('cancel'), style: TextStyle(color: AppColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () { Navigator.pop(ctx); viewModel.deleteContact(index); },
+            child: Text(lp.translate('delete'),
+                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoCard() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20.w),
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A2A3A),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: const Color(0xFF2A4A6A),
-          width: 1,
+  void _showContactBottomSheet(BuildContext context, EmergencyContactsViewModel viewModel,
+      LanguageProvider lp, {ICEContact? existing, int? index}) {
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    final relationCtrl = TextEditingController(text: existing?.relation ?? '');
+    final phoneCtrl = TextEditingController(text: existing?.phoneNumber ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          String? errorText;
+          return Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+            ),
+            padding: EdgeInsets.only(
+              left: 24.w, right: 24.w, top: 24.h,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 32.h,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40.w, height: 4.h,
+                    decoration: BoxDecoration(
+                      color: AppColors.textMuted.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                Text(
+                  existing == null ? lp.translate('ice_add_contact') : lp.translate('ice_edit_contact'),
+                  style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+                SizedBox(height: 24.h),
+                _sheetField(nameCtrl, lp.translate('ice_name'), Icons.person_outline),
+                SizedBox(height: 16.h),
+                _sheetField(relationCtrl, lp.translate('ice_relation'), Icons.people_outline),
+                SizedBox(height: 16.h),
+                _sheetField(phoneCtrl, lp.translate('ice_phone'), Icons.phone_outlined,
+                    keyboardType: TextInputType.phone),
+                if (errorText != null) ...[
+                  SizedBox(height: 12.h),
+                  Text(errorText!, style: TextStyle(color: AppColors.primaryRed, fontSize: 13.sp)),
+                ],
+                SizedBox(height: 28.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(ctx),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Center(child: Text(lp.translate('cancel'),
+                              style: TextStyle(color: AppColors.textMuted,
+                                  fontWeight: FontWeight.w600, fontSize: 15.sp))),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          final name = nameCtrl.text.trim();
+                          final relation = relationCtrl.text.trim();
+                          final phone = phoneCtrl.text.trim();
+                          if (name.isEmpty || phone.isEmpty) {
+                            setSheetState(() => errorText = lp.translate('ice_fields_required'));
+                            return;
+                          }
+                          final contact = ICEContact(name: name, relation: relation, phoneNumber: phone);
+                          Navigator.pop(ctx);
+                          if (existing == null) {
+                            await viewModel.addContact(contact);
+                          } else {
+                            await viewModel.updateContact(index!, contact);
+                          }
+                        },
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryRed,
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Center(child: Text(lp.translate('save'),
+                              style: TextStyle(color: Colors.white,
+                                  fontWeight: FontWeight.w700, fontSize: 15.sp))),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _sheetField(TextEditingController ctrl, String label, IconData icon,
+      {TextInputType? keyboardType}) {
+    return TextField(
+      controller: ctrl,
+      keyboardType: keyboardType,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: AppColors.textMuted),
+        prefixIcon: Icon(icon, color: AppColors.textMuted),
+        filled: true,
+        fillColor: AppColors.background,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide(color: AppColors.primaryRed, width: 1.5),
         ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24.w,
-            height: 24.w,
-            decoration: const BoxDecoration(
-              color: Color(0xFF2196F3),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.info,
-              color: Colors.white,
-              size: 14.sp,
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Text(
-              "En cas d'urgence majeure, vos contacts recevront votre position GPS exacte par SMS et seront appelés selon vos réglages.",
-              style: TextStyle(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF90CAF9),
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ).animate()
-      .fadeIn(duration: 400.ms, delay: 200.ms);
-  }
-
-  Widget _buildSOSButton(EmergencyContactsViewModel viewModel) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: GestureDetector(
-        onTap: viewModel.triggerSOS,
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(vertical: 20.h),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: AppColors.redGradient,
-            ),
-            borderRadius: BorderRadius.circular(16.r),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryRed.withOpacity(0.4),
-                blurRadius: 20,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'SOS',
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: 2,
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Text(
-                'SIGNALEMENT RAPIDE',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withOpacity(0.9),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ).animate()
-      .fadeIn(duration: 400.ms, delay: 300.ms)
-      .then()
-      .shimmer(duration: 1500.ms, color: Colors.white.withOpacity(0.1));
-  }
-
-  Color _getServiceColor(ServiceType type) {
-    switch (type) {
-      case ServiceType.police:
-        return const Color(0xFF2196F3);
-      case ServiceType.civilProtection:
-        return const Color(0xFFFF9800);
-      case ServiceType.medical:
-        return const Color(0xFF4CAF50);
-      case ServiceType.fire:
-        return const Color(0xFFF44336);
-    }
-  }
-
-  IconData _getServiceIcon(ServiceType type) {
-    switch (type) {
-      case ServiceType.police:
-        return Icons.shield;
-      case ServiceType.civilProtection:
-        return Icons.local_fire_department;
-      case ServiceType.medical:
-        return Icons.medical_services;
-      case ServiceType.fire:
-        return Icons.fire_extinguisher;
-    }
-  }
-
-  Color _getAvatarColor(String name) {
-    final colors = [
-      const Color(0xFF9C27B0),
-      const Color(0xFFFF9800),
-      const Color(0xFF4CAF50),
-      const Color(0xFF2196F3),
-      const Color(0xFFE91E63),
-    ];
-    return colors[name.length % colors.length];
+    );
   }
 
   @override

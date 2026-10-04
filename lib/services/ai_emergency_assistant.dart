@@ -45,7 +45,7 @@ class AIEmergencyAssistant with ListenableServiceMixin {
   Future<void> _initializeAI() async {
     try {
       await _aiProvider.initialize(systemPrompt: _buildSystemPrompt());
-      print('✅ AI initialized: ${_aiProvider.providerName}');
+      print(' AI initialized: ${_aiProvider.providerName}');
     } catch (e) {
       print('AI Assistant initialization error: $e');
     }
@@ -78,7 +78,7 @@ class AIEmergencyAssistant with ListenableServiceMixin {
     }
 
     if (profile.allergies.isNotEmpty) {
-      parts.add('⚠️ ALLERGIES (critical): ${profile.allergies.join(', ')}');
+      parts.add('️ ALLERGIES (critical): ${profile.allergies.join(', ')}');
     }
 
     if (profile.emergencyNotes.isNotEmpty) {
@@ -324,7 +324,7 @@ Respond in $langName.
   /// Process user message during emergency
   /// CHANGED: _chatSession?.sendMessage → _aiProvider.sendMessage
   Future<void> processUserMessage(String message, [String? languageCode]) async {
-    print('🤖 [AI] User: "$message"');
+    print(' [AI] User: "$message"');
     if (!_isEmergencyActive.value) return;
 
     final userChatMessage = ChatMessage(

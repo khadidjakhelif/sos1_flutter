@@ -67,7 +67,7 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
     );
   }
 
-  // ── Dispatch failure banner ─────────────────────────────────────────────
+  // -- Dispatch failure banner ----
   Widget _buildDispatchFailureBanner(BuildContext context) {
     final lp = Provider.of<LanguageProvider>(context, listen: false);
     return Container(
@@ -117,7 +117,7 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
         .fadeIn(duration: 300.ms);
   }
 
-  // ── Auto-call countdown widget ─────────────────────────────────────────
+  // -- Auto-call countdown widget ----
   Widget _buildAutoCallCountdown(
       BuildContext context, EmergencyModeViewModel viewModel) {
     final lp = Provider.of<LanguageProvider>(context, listen: false);
@@ -260,30 +260,34 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
                         duration: 900.ms,
                         curve: Curves.easeInOut),
                 SizedBox(width: 10.w),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      lp.translate('emergency_resolved_title'),
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white.withOpacity(0.8),
-                        letterSpacing: 2,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        lp.translate('emergency_resolved_title'),
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white.withOpacity(0.8),
+                          letterSpacing: 2,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 2.h),
-                    Text(
-                      resolution.responderLabel,
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                      SizedBox(height: 2.h),
+                      Text(
+                        resolution.responderLabel,
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        softWrap: true,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const Spacer(),
                 // ETA chip
                 if (resolution.etaMinutes != null)
                   Container(
@@ -857,15 +861,15 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
           // Send Button
           GestureDetector(
             onTap: () {
-              print('🔘 SEND BUTTON TAPPED');
+              print('SEND BUTTON TAPPED');
               final text = viewModel.textController.text.trim();
-              print('📝 Text: "$text"');
+              print('Text: "$text"');
               if (text.isNotEmpty) {
-                print('✅ Sending...');
+                print('Sending...');
                 viewModel.sendMessage(text);
                 viewModel.textController.clear();
               } else {
-                print('❌ Empty text');
+                print('Empty text, not sending.');
               }
             },
             child: Container(
@@ -901,7 +905,7 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
   }
 }
 
-// ─── Ping Prompt Banner ────────────────────────────────────────────────────────
+// --- Ping Prompt Banner ----
 
 /// Stateful widget that shows a 60-second countdown for the officer's
 /// "are you OK?" ping. Tapping the acknowledge button calls [onAcknowledge].

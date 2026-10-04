@@ -12,6 +12,7 @@ import 'package:hive/hive.dart';
 import 'dart:async';
 import '../../../models/medical_profile.dart';
 import '../../../models/department.dart';
+
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
 
@@ -34,7 +35,7 @@ class _LoginViewState extends State<LoginView> {
   // Extra fields for registration
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  
+
   Department? _selectedDepartment;
   Unit? _selectedUnit;
   List<Department> _departments = [];
@@ -178,19 +179,11 @@ class _LoginViewState extends State<LoginView> {
                   SizedBox(height: 60.h),
 
                   // Logo
-                  Icon(Icons.emergency,
-                      color: AppColors.primaryRed, size: 64.sp),
-                  SizedBox(height: 16.h),
-                  Text('EchoAlert',
-                      style: TextStyle(
-                          fontSize: 28.sp,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryRed,
-                          letterSpacing: 3)),
-                  SizedBox(height: 8.h),
-                  Text('Système de gestion des urgences',
-                      style: TextStyle(
-                          fontSize: 13.sp, color: AppColors.textMuted)),
+                  Image.asset(
+                    'assets/logo/logo_transparent.png',
+                    height: 100.h,
+                    fit: BoxFit.contain,
+                  ),
 
                   SizedBox(height: 48.h),
 
@@ -202,13 +195,15 @@ class _LoginViewState extends State<LoginView> {
                     ),
                     child: Row(
                       children: [
-                        _buildToggleButton('Connexion', _isLoginMode, () {
+                        _buildToggleButton(lp.translate('login'), _isLoginMode,
+                            () {
                           setState(() {
                             _isLoginMode = true;
                             _errorMessage = null;
                           });
                         }),
-                        _buildToggleButton('Inscription', !_isLoginMode, () {
+                        _buildToggleButton(
+                            lp.translate('register'), !_isLoginMode, () {
                           setState(() {
                             _isLoginMode = false;
                             _errorMessage = null;
@@ -222,28 +217,31 @@ class _LoginViewState extends State<LoginView> {
 
                   // Register-only fields
                   if (!_isLoginMode) ...[
-                    _buildField(
-                        _fullNameController, 'Nom complet', Icons.person),
+                    _buildField(_fullNameController, lp.translate('full_name'),
+                        Icons.person),
                     SizedBox(height: 16.h),
-                    _buildField(_phoneController, 'Téléphone', Icons.phone,
+                    _buildField(_phoneController, lp.translate('login_phone'),
+                        Icons.phone,
                         keyboardType: TextInputType.phone),
                     SizedBox(height: 16.h),
-                    _buildField(
-                        _companyCodeController, 'Code entreprise', Icons.business,
-                        hint: 'Ex: SONATRACH-2024',
-                        focusNode: _companyCodeFocus,
-                        onChanged: (val) {
-                          if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-                          _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-                            _fetchDepartments(val);
-                          });
-                        }),
+                    _buildField(_companyCodeController,
+                        lp.translate('company_code'), Icons.business,
+                        hint: lp.translate('company_code_hint'),
+                        focusNode: _companyCodeFocus, onChanged: (val) {
+                      if (_debounceTimer?.isActive ?? false)
+                        _debounceTimer!.cancel();
+                      _debounceTimer =
+                          Timer(const Duration(milliseconds: 500), () {
+                        _fetchDepartments(val);
+                      });
+                    }),
                     SizedBox(height: 16.h),
                     if (_departments.isEmpty && !_isFetchingDepartments)
                       Padding(
                         padding: EdgeInsets.only(bottom: 16.h),
                         child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16.w, vertical: 14.h),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(12.r),
@@ -251,11 +249,13 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.domain, color: Colors.white38, size: 20.sp),
+                              Icon(Icons.domain,
+                                  color: Colors.white38, size: 20.sp),
                               SizedBox(width: 12.w),
                               Text(
-                                'Département / Unité: non configurés',
-                                style: TextStyle(color: Colors.white38, fontSize: 13.sp),
+                                lp.translate('dept_unit_not_configured'),
+                                style: TextStyle(
+                                    color: Colors.white38, fontSize: 13.sp),
                               ),
                             ],
                           ),
@@ -263,7 +263,7 @@ class _LoginViewState extends State<LoginView> {
                       )
                     else if (_departments.isNotEmpty) ...[
                       _buildDropdown<Department>(
-                        label: 'Département (optionnel)',
+                        label: lp.translate('department_optional'),
                         icon: Icons.domain,
                         value: _selectedDepartment,
                         items: _departments,
@@ -277,7 +277,7 @@ class _LoginViewState extends State<LoginView> {
                       ),
                       SizedBox(height: 16.h),
                       _buildDropdown<Unit>(
-                        label: 'Unité (optionnel)',
+                        label: lp.translate('unit_optional'),
                         icon: Icons.group_work,
                         value: _selectedUnit,
                         items: _selectedDepartment?.units ?? [],
@@ -288,25 +288,25 @@ class _LoginViewState extends State<LoginView> {
                     ],
                     SizedBox(height: 16.h),
                   ],
-                  
+
                   if (!_isLoginMode && _isFetchingDepartments)
-                     Padding(
-                       padding: EdgeInsets.only(bottom: 16.h),
-                       child: const CircularProgressIndicator(),
-                     ),
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 16.h),
+                      child: const CircularProgressIndicator(),
+                    ),
 
                   // Common fields
-                  _buildField(
-                      _employeeIdController, 'Matricule employé', Icons.badge),
+                  _buildField(_employeeIdController,
+                      lp.translate('employee_id'), Icons.badge),
                   SizedBox(height: 16.h),
                   // In register mode, company code is above dept/unit — don't duplicate it here
                   if (_isLoginMode)
-                    _buildField(
-                        _companyCodeController, 'Code entreprise', Icons.business,
-                        hint: 'Ex: SONATRACH-2024',
+                    _buildField(_companyCodeController,
+                        lp.translate('company_code'), Icons.business,
+                        hint: lp.translate('company_code_hint'),
                         focusNode: _companyCodeFocus),
                   if (_isLoginMode) SizedBox(height: 16.h),
-                  _buildPasswordField(),
+                  _buildPasswordField(lp),
 
                   // Error message
                   if (_errorMessage != null) ...[
@@ -364,8 +364,8 @@ class _LoginViewState extends State<LoginView> {
                                     color: Colors.white, strokeWidth: 2))
                             : Text(
                                 _isLoginMode
-                                    ? 'Se connecter'
-                                    : 'Créer mon compte',
+                                    ? lp.translate('login_button')
+                                    : lp.translate('create_account'),
                                 style: TextStyle(
                                     fontSize: 16.sp,
                                     fontWeight: FontWeight.w700,
@@ -407,7 +407,10 @@ class _LoginViewState extends State<LoginView> {
 
   Widget _buildField(
       TextEditingController controller, String label, IconData icon,
-      {String? hint, TextInputType? keyboardType, FocusNode? focusNode, ValueChanged<String>? onChanged}) {
+      {String? hint,
+      TextInputType? keyboardType,
+      FocusNode? focusNode,
+      ValueChanged<String>? onChanged}) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -434,7 +437,7 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget _buildPasswordField() {
+  Widget _buildPasswordField(LanguageProvider lp) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -447,7 +450,7 @@ class _LoginViewState extends State<LoginView> {
         style: TextStyle(fontSize: 15.sp, color: Colors.white),
         decoration: InputDecoration(
           prefixIcon: Icon(Icons.lock, color: AppColors.textMuted, size: 20.sp),
-          labelText: 'Mot de passe',
+          labelText: lp.translate('password'),
           labelStyle: TextStyle(color: AppColors.textMuted, fontSize: 14.sp),
           border: InputBorder.none,
           contentPadding:
@@ -489,7 +492,8 @@ class _LoginViewState extends State<LoginView> {
               EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
         ),
         items: items
-            .map((item) => DropdownMenuItem<T>(value: item, child: Text(itemLabel(item))))
+            .map((item) =>
+                DropdownMenuItem<T>(value: item, child: Text(itemLabel(item))))
             .toList(),
         onChanged: items.isEmpty ? null : onChanged,
       ),

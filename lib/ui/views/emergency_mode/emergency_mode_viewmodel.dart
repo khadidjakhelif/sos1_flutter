@@ -38,18 +38,18 @@ class EmergencyModeViewModel extends BaseViewModel {
   bool _isListening = false;
   bool get isListening => _isListening;
 
-  // ── NEW: SSE-driven resolution state ─────────────────────────────────────
+  // -- NEW: SSE-driven resolution state ----
   EmergencyResolution? _resolution;
   EmergencyResolution? get resolution => _resolution; // consumed by the view
   StreamSubscription<EmergencyResolution>? _resolutionSub; // NEW
   Timer? _messagePollTimer; // NEW: poll backend for officer/system messages
 
-  // ── NEW: Ping state ───────────────────────────────────────────────────────
+  // -- NEW: Ping state ----
   PingEvent? _pendingPing;
   PingEvent? get pendingPing => _pendingPing;
   StreamSubscription<PingEvent>? _pingSub; // NEW
 
-  // ── Reactive state (UNCHANGED) ───────────────────────────────────────
+  // -- Reactive state (UNCHANGED) ----
   bool get isProcessing => _aiAssistant.isProcessing;
   List<ChatMessage> get messages => _aiAssistant.messages;
   String get currentStep => _aiAssistant.currentStep;
@@ -62,7 +62,7 @@ class EmergencyModeViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  // ── Emergency info (UNCHANGED) ────────────────────────────────────────
+  // -- Emergency info (UNCHANGED) ----
   String _emergencyType = '';
   String _emergencyDescription = '';
   String? _userLocation;
@@ -83,12 +83,12 @@ class EmergencyModeViewModel extends BaseViewModel {
       ReactiveValue<Duration>(Duration.zero);
   Duration get elapsedTime => _elapsedTime.value;
 
-  // ── Dispatch status (retry-with-backoff) ─────────────────────────────────
+  // -- Dispatch status (retry-with-backoff) ----
   final ReactiveValue<EmergencyReportStatus> _reportStatus =
       ReactiveValue<EmergencyReportStatus>(EmergencyReportStatus.pending);
   EmergencyReportStatus get reportStatus => _reportStatus.value;
 
-  // ── Auto-call countdown (shown when dispatch fails) ───────────────────────
+  // -- Auto-call countdown (shown when dispatch fails) ----
   Timer? _countdownTimer;
   final ReactiveValue<int?> _countdownSeconds = ReactiveValue<int?>(null);
 
@@ -198,7 +198,7 @@ class EmergencyModeViewModel extends BaseViewModel {
     setBusy(false);
   }
 
-  // ── Retry-with-backoff ────────────────────────────────────────────────────
+  // -- Retry-with-backoff ----
   Future<void> _reportWithRetry({
     required String emergencyType,
     double? reportLat,
@@ -376,7 +376,7 @@ class EmergencyModeViewModel extends BaseViewModel {
   Future<void> _speakResolutionBanner(EmergencyResolution resolution) async {
     final langCode = _languageService.currentLanguage.code;
 
-    // The model's responderLabel includes emojis (e.g. "🚓 Police").
+    // The model's responderLabel includes emojis (e.g. " Police").
     // TTS engines usually handle common emojis well, or we can just use the raw type.
     // We'll strip the emoji by using the raw type translated, or relying on TTS fallback.
     final responderMap = {
@@ -440,7 +440,7 @@ class EmergencyModeViewModel extends BaseViewModel {
     } else {
       _isListening = true;
       print(
-          '🎤 Toggle listening - Language: ${_languageService.currentLanguage.code}');
+          ' Toggle listening - Language: ${_languageService.currentLanguage.code}');
       notifyListeners();
       await _speech.listen(
         onResult: (result) {
@@ -483,16 +483,16 @@ class EmergencyModeViewModel extends BaseViewModel {
         _isListening = false;
         notifyListeners();
       }
-      print('📤 [1] sendMessage START: "$trimmed"');
+      print(' [1] sendMessage START: "$trimmed"');
       // Also persist worker message to backend fire-and-forget
       if (_emergencyId != null) {
         _apiService.sendTextMessageWithRole(_emergencyId!, trimmed, 'worker');
       }
       await _aiAssistant.processUserMessage(
           trimmed, _languageService.getLanguageCode());
-      print('📤 [3] AI processing COMPLETE');
+      print(' [3] AI processing COMPLETE');
       notifyListeners();
-      print('📤 [4] UI notified');
+      print(' [4] UI notified');
     }
   }
 
@@ -520,7 +520,7 @@ class EmergencyModeViewModel extends BaseViewModel {
   Future<void> callEmergencyServices() async {
     final langCode = _languageService.currentLanguage.code;
 
-    // ✅ Language-aware confirmation
+    //  Language-aware confirmation
     final confirmation = {
           'fr': "Envoi des alertes SMS et appel des secours en cours.",
           'ar': "إرسال تنبيهات SMS والاتصال بخدمات الطوارئ جارٍ.",

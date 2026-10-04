@@ -128,7 +128,7 @@ class TermsOfUseView extends ViewModelBuilderWidget<TermsOfUseViewModel> {
     });
   }
 
-  // ── helpers — UI unchanged, only strings swapped ──────────────────────────
+  // -- helpers — UI unchanged, only strings swapped ----
 
   Widget _buildEmergencyNumbersCard(BuildContext context, LanguageProvider lp) {
     return Card(

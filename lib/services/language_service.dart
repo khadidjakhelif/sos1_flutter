@@ -23,7 +23,7 @@ class LanguageService with ListenableServiceMixin {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedLanguageCode = prefs.getString(_languageKey);
-      print('💾 Saved language code: $savedLanguageCode');
+      print(' Saved language code: $savedLanguageCode');
 
       if (savedLanguageCode != null) {
         // Convert saved code to AppLanguage

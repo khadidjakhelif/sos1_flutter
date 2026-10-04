@@ -144,7 +144,7 @@ class LanguageProvider extends ChangeNotifier {
       'delete': 'Supprimer',
       'stop_reading': 'Arrêter la lecture',
       'not_an_emergency': 'Pas une urgence',
-      // ── Emergency mode banners ─────────────────────────────────────────────
+      // -- Emergency mode banners ----
       'dispatch_unreachable_title': 'DISPATCH INJOIGNABLE',
       'dispatch_unreachable_body':
           'Serveur non joignable après 3 tentatives. '
@@ -157,6 +157,32 @@ class LanguageProvider extends ChangeNotifier {
       'emergency_eta': 'ETA %d min',
       'ping_title': 'L\'officier demande : Êtes-vous OK ?',
       'ping_ok_button': '✅  JE SUIS OK',
+      // ICE Contacts
+      'ice_add_contact': 'Ajouter un contact ICE',
+      'ice_contacts_section': 'CONTACTS PERSONNELS',
+      'ice_info_banner': 'En cas d\'urgence majeure, vos contacts recevront votre position GPS exacte par SMS et seront appelés selon vos réglages.',
+      'ice_no_contacts': 'Aucun contact d\'urgence',
+      'ice_no_contacts_subtitle': 'Ajoutez des personnes de confiance à prévenir en cas de problème.',
+      'ice_delete_title': 'Supprimer le contact',
+      'ice_delete_confirm': 'Voulez-vous vraiment supprimer ce contact ?',
+      'ice_edit_contact': 'Modifier le contact',
+      'ice_name': 'Nom',
+      'ice_relation': 'Relation (ex: Père, Conjoint)',
+      'ice_phone': 'Téléphone',
+      'ice_fields_required': 'Le nom et le téléphone sont obligatoires.',
+      // Login
+      'login': 'Connexion',
+      'register': 'Inscription',
+      'login_phone': 'Téléphone',
+      'company_code': 'Code entreprise',
+      'company_code_hint': 'Ex: SONATRACH-2024',
+      'dept_unit_not_configured': 'Département / Unité: non configurés',
+      'department_optional': 'Département (optionnel)',
+      'unit_optional': 'Unité (optionnel)',
+      'employee_id': 'Matricule employé',
+      'password': 'Mot de passe',
+      'create_account': 'Créer mon compte',
+      'login_button': 'Se connecter',
     },
     'العربية': {
       'back': 'عودة',
@@ -287,7 +313,7 @@ class LanguageProvider extends ChangeNotifier {
       'delete': 'حذف',
       'stop_reading': 'إيقاف القراءة',
       'not_an_emergency': 'ليست حالة طوارئ',
-      // ── Emergency mode banners ─────────────────────────────────────────────
+      // -- Emergency mode banners ----
       'dispatch_unreachable_title': 'مركز الإرسال غير متاح',
       'dispatch_unreachable_body':
           'تعذّر الاتصال بالخادم بعد 3 محاولات. '
@@ -300,6 +326,32 @@ class LanguageProvider extends ChangeNotifier {
       'emergency_eta': 'الوصول خلال %d دقيقة',
       'ping_title': 'يسأل الضابط: هل أنت بخير؟',
       'ping_ok_button': '✅  أنا بخير',
+      // ICE Contacts
+      'ice_add_contact': 'إضافة جهة اتصال طوارئ',
+      'ice_contacts_section': 'جهات الاتصال الشخصية',
+      'ice_info_banner': 'في حالة طوارئ كبرى، ستتلقى جهات الاتصال الخاصة بك موقع GPS الدقيق الخاص بك عبر رسالة قصيرة وسيتم الاتصال بهم وفقًا لإعداداتك.',
+      'ice_no_contacts': 'لا توجد جهات اتصال طوارئ',
+      'ice_no_contacts_subtitle': 'أضف أشخاصًا موثوقين للاتصال بهم في حالة حدوث مشكلة.',
+      'ice_delete_title': 'حذف جهة الاتصال',
+      'ice_delete_confirm': 'هل تريد حقًا حذف جهة الاتصال هذه؟',
+      'ice_edit_contact': 'تعديل جهة الاتصال',
+      'ice_name': 'الاسم',
+      'ice_relation': 'صلة القرابة (مثل: الأب، الزوج)',
+      'ice_phone': 'رقم الهاتف',
+      'ice_fields_required': 'الاسم ورقم الهاتف مطلوبان.',
+      // Login
+      'login': 'تسجيل الدخول',
+      'register': 'إنشاء حساب',
+      'login_phone': 'الهاتف',
+      'company_code': 'رمز الشركة',
+      'company_code_hint': 'مثال: SONATRACH-2024',
+      'dept_unit_not_configured': 'القسم / الوحدة: غير مكوّن',
+      'department_optional': 'القسم (اختياري)',
+      'unit_optional': 'الوحدة (اختياري)',
+      'employee_id': 'رقم الموظف',
+      'password': 'كلمة المرور',
+      'create_account': 'إنشاء الحساب',
+      'login_button': 'تسجيل الدخول',
     },
     'English': {
       'back': 'Back',
@@ -434,7 +486,7 @@ class LanguageProvider extends ChangeNotifier {
       'delete': 'Delete',
       'stop_reading': 'Stop Reading',
       'not_an_emergency': 'Not an Emergency',
-      // ── Emergency mode banners ─────────────────────────────────────────────
+      // -- Emergency mode banners ----
       'dispatch_unreachable_title': 'UNABLE TO REACH DISPATCH',
       'dispatch_unreachable_body':
           'Server unreachable after 3 attempts. '
@@ -447,6 +499,32 @@ class LanguageProvider extends ChangeNotifier {
       'emergency_eta': 'ETA %d min',
       'ping_title': 'Officer asks: Are you OK?',
       'ping_ok_button': '✅  I AM OK',
+      // ICE Contacts
+      'ice_add_contact': 'Add ICE Contact',
+      'ice_contacts_section': 'PERSONAL CONTACTS',
+      'ice_info_banner': 'In a major emergency, your contacts will receive your exact GPS location via SMS and will be called according to your settings.',
+      'ice_no_contacts': 'No emergency contacts',
+      'ice_no_contacts_subtitle': 'Add trusted people to notify in case of a problem.',
+      'ice_delete_title': 'Delete Contact',
+      'ice_delete_confirm': 'Do you really want to delete this contact?',
+      'ice_edit_contact': 'Edit Contact',
+      'ice_name': 'Name',
+      'ice_relation': 'Relation (e.g. Father, Spouse)',
+      'ice_phone': 'Phone Number',
+      'ice_fields_required': 'Name and phone are required.',
+      // Login
+      'login': 'Login',
+      'register': 'Register',
+      'login_phone': 'Phone',
+      'company_code': 'Company Code',
+      'company_code_hint': 'E.g. SONATRACH-2024',
+      'dept_unit_not_configured': 'Department / Unit: not configured',
+      'department_optional': 'Department (optional)',
+      'unit_optional': 'Unit (optional)',
+      'employee_id': 'Employee ID',
+      'password': 'Password',
+      'create_account': 'Create Account',
+      'login_button': 'Log In',
     },
   };
 

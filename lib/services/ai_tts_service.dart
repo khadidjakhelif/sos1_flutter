@@ -69,7 +69,7 @@ class AITtsService with ListenableServiceMixin {
 
     try {
       await _aiProvider.initialize();
-      print('✅ [AITtsService] Provider: ${_aiProvider.providerName}');
+      print(' [AITtsService] Provider: ${_aiProvider.providerName}');
     } catch (e) {
       print('Gemini initialization error: $e');
     }
@@ -82,8 +82,8 @@ class AITtsService with ListenableServiceMixin {
 
     final langCode = _languageService?.getLanguageCode() ?? 'fr';
 
-    print('🔍 _languageService is null: ${_languageService == null}');
-    print('🔍 langCode: ${_languageService?.getLanguageCode()}');
+    print(' _languageService is null: ${_languageService == null}');
+    print(' langCode: ${_languageService?.getLanguageCode()}');
 
     const localeMap = {
       'fr': 'fr-FR',
@@ -92,7 +92,7 @@ class AITtsService with ListenableServiceMixin {
     };
 
     final locale = localeMap[langCode] ?? 'fr-FR';
-    print('🔊 Setting TTS locale: $locale');
+    print(' Setting TTS locale: $locale');
 
     // Set language FIRST, then voice settings — order matters on Android
     await _flutterTts.setLanguage(locale);

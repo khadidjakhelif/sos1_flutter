@@ -143,9 +143,9 @@ class VoiceAssistantViewModel extends BaseViewModel {
   }
 
   void _onEmergencyDetected(EmergencyIntent intent) async {
-    print('🔥 EMERGENCY DETECTED: ${intent.type} (${intent.confidence})');
+    print(' EMERGENCY DETECTED: ${intent.type} (${intent.confidence})');
     if (intent.isHighConfidence || intent.needsImmediateResponse == true) {
-      print('🚨 HIGH CONFIDENCE - Showing UI');
+      print(' HIGH CONFIDENCE - Showing UI');
       // Reset "not an emergency" state if a real emergency follows
       _isNotEmergency = false;
       _detectedEmergencyType = intent.type;

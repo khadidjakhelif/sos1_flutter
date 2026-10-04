@@ -151,7 +151,7 @@ class PrivacyPolicyView extends StatelessWidget {
     });
   }
 
-  // ── helpers — UI unchanged, only strings swapped ──────────────────────────
+  // -- helpers — UI unchanged, only strings swapped ----
 
   Widget _buildSection(BuildContext context, String title, List<Widget> children) {
     return Card(

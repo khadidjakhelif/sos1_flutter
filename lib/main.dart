@@ -93,7 +93,7 @@ void main() async {
   runApp(ChangeNotifierProvider.value(
       value: languageProvider, child: SOS1App(isLoggedIn: isLoggedIn)));
 
-  // ── Background inits (must NOT block runApp) ──────────────────────────────
+  // -- Background inits (must NOT block runApp) ----
   // TTS engine init and GPS permission/warm-up are slow and involve OS dialogs.
   // Fire them after the first frame so the app is already visible.
   WidgetsBinding.instance.addPostFrameCallback((_) async {

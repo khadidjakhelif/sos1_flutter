@@ -84,7 +84,7 @@ class MedicalProfileView extends StackedView<MedicalProfileViewModel> {
                     child: Column(
                       children: [
                         SizedBox(height: 24.h),
-                        _buildProfileHeader(profile, lp),
+                        _buildProfileHeader(profile, viewModel, lp),
                         SizedBox(height: 32.h),
                         _buildBloodTypeCard(profile, lp),
                         SizedBox(height: 32.h),
@@ -178,7 +178,7 @@ class MedicalProfileView extends StackedView<MedicalProfileViewModel> {
     );
   }
 
-  Widget _buildProfileHeader(MedicalProfile profile, LanguageProvider lp) {
+  Widget _buildProfileHeader(MedicalProfile profile, MedicalProfileViewModel viewModel, LanguageProvider lp) {
     return Column(
       children: [
         Stack(
@@ -218,6 +218,54 @@ class MedicalProfileView extends StackedView<MedicalProfileViewModel> {
             style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
           ),
         ),
+        if (viewModel.departmentName != null || viewModel.unitName != null) ...[
+          SizedBox(height: 8.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (viewModel.departmentName != null)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(color: AppColors.textMuted.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.domain, size: 14.sp, color: AppColors.textSecondary),
+                      SizedBox(width: 4.w),
+                      Text(
+                        viewModel.departmentName!,
+                        style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              if (viewModel.departmentName != null && viewModel.unitName != null)
+                SizedBox(width: 8.w),
+              if (viewModel.unitName != null)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(color: AppColors.textMuted.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.group_work, size: 14.sp, color: AppColors.textSecondary),
+                      SizedBox(width: 4.w),
+                      Text(
+                        viewModel.unitName!,
+                        style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
         SizedBox(height: 8.h),
         if (profile.lastUpdated != null)
           Text(

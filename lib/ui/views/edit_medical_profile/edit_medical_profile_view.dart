@@ -126,7 +126,7 @@ class EditProfileView extends StackedView<EditProfileViewModel> {
     );
   }
 
-  // ── Header ─────────────────────────────────────────────────────────────────
+  // -- Header ----
 
   Widget _buildHeader(EditProfileViewModel viewModel, LanguageProvider lp) {
     return Padding(
@@ -167,7 +167,7 @@ class EditProfileView extends StackedView<EditProfileViewModel> {
     );
   }
 
-  // ── Section title ──────────────────────────────────────────────────────────
+  // -- Section title ----
 
   Widget _buildSectionTitle(String title, IconData icon) {
     return Padding(
@@ -189,7 +189,7 @@ class EditProfileView extends StackedView<EditProfileViewModel> {
     );
   }
 
-  // ── Text field ─────────────────────────────────────────────────────────────
+  // -- Text field ----
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -218,7 +218,7 @@ class EditProfileView extends StackedView<EditProfileViewModel> {
     ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.05, end: 0);
   }
 
-  // ── Blood type selector ────────────────────────────────────────────────────
+  // -- Blood type selector ----
 
   Widget _buildBloodTypeSelector(EditProfileViewModel viewModel) {
     return Container(
@@ -265,7 +265,7 @@ class EditProfileView extends StackedView<EditProfileViewModel> {
     ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.05, end: 0);
   }
 
-  // ── Toggle card ────────────────────────────────────────────────────────────
+  // -- Toggle card ----
 
   Widget _buildToggleCard({
     required String title,
@@ -318,7 +318,7 @@ class EditProfileView extends StackedView<EditProfileViewModel> {
     );
   }
 
-  // ── Tag list (diseases / allergies) ───────────────────────────────────────
+  // -- Tag list (diseases / allergies) ----
 
   Widget _buildTagList({
     required BuildContext context,
@@ -421,7 +421,7 @@ class EditProfileView extends StackedView<EditProfileViewModel> {
     ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.05, end: 0);
   }
 
-  // ── ICE Contact ────────────────────────────────────────────────────────────
+  // -- ICE Contact ----
 
   Widget _buildICESection(EditProfileViewModel viewModel, LanguageProvider lp) {
     return Container(
@@ -490,7 +490,7 @@ class EditProfileView extends StackedView<EditProfileViewModel> {
     );
   }
 
-  // ── Save button ────────────────────────────────────────────────────────────
+  // -- Save button ----
 
   Widget _buildSaveButton(
       EditProfileViewModel viewModel, LanguageProvider lp) {

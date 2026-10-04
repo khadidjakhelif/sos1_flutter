@@ -9,14 +9,14 @@ class EditProfileViewModel extends BaseViewModel {
   final _medicalProfileService = locator<MedicalProfileService>();
   final _navigationService = locator<NavigationService>();
 
-  // ── Form controllers ───────────────────────────────────────────────────────
+  // -- Form controllers ----
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController emergencyNotesController = TextEditingController();
   final TextEditingController iceNameController = TextEditingController();
   final TextEditingController iceRelationController = TextEditingController();
   final TextEditingController icePhoneController = TextEditingController();
 
-  // ── Editable state ─────────────────────────────────────────────────────────
+  // -- Editable state ----
   BloodType _selectedBloodType = BloodType.oPositive;
   bool _isUniversalDonor = false;
   List<String> _chronicDiseases = [];
@@ -27,7 +27,7 @@ class EditProfileViewModel extends BaseViewModel {
   List<String> get chronicDiseases => List.unmodifiable(_chronicDiseases);
   List<String> get allergies => List.unmodifiable(_allergies);
 
-  // ── Init ───────────────────────────────────────────────────────────────────
+  // -- Init ----
   Future<void> initialize() async {
     setBusy(true);
     final profile = _medicalProfileService.profile;
@@ -46,7 +46,7 @@ class EditProfileViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  // ── Blood type ─────────────────────────────────────────────────────────────
+  // -- Blood type ----
   void setBloodType(BloodType type) {
     _selectedBloodType = type;
     notifyListeners();
@@ -57,7 +57,7 @@ class EditProfileViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  // ── Chronic diseases ───────────────────────────────────────────────────────
+  // -- Chronic diseases ----
   void addChronicDisease(String disease) {
     final trimmed = disease.trim();
     if (trimmed.isNotEmpty && !_chronicDiseases.contains(trimmed)) {
@@ -71,7 +71,7 @@ class EditProfileViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  // ── Allergies ──────────────────────────────────────────────────────────────
+  // -- Allergies ----
   void addAllergy(String allergy) {
     final trimmed = allergy.trim();
     if (trimmed.isNotEmpty && !_allergies.contains(trimmed)) {
@@ -85,7 +85,7 @@ class EditProfileViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  // ── Save ───────────────────────────────────────────────────────────────────
+  // -- Save ----
   Future<void> saveProfile() async {
     setBusy(true);
 
@@ -122,7 +122,7 @@ class EditProfileViewModel extends BaseViewModel {
 
   void goBack() => _navigationService.back();
 
-  // ── Show add-item dialog helper (called from view) ─────────────────────────
+  // -- Show add-item dialog helper (called from view) ----
   // Returns the entered text or null if cancelled
   Future<String?> showAddItemDialog(
       BuildContext context, {

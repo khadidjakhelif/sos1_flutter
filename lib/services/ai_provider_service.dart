@@ -47,7 +47,7 @@ class AIProviderService {
         return await _sendGeminiMessage(message);
       }
     } catch (e) {
-      print('❌ [AIProvider] Error: $e');
+      print(' [AIProvider] Error: $e');
       return null;
     }
   }
@@ -66,7 +66,7 @@ class AIProviderService {
         return response.text;
       }
     } catch (e) {
-      print('❌ [AIProvider] generateContent error: $e');
+      print(' [AIProvider] generateContent error: $e');
       return null;
     }
   }
@@ -112,7 +112,7 @@ class AIProviderService {
       final data = jsonDecode(response.body);
       return data['choices'][0]['message']['content'] as String?;
     } else {
-      print('❌ Groq error ${response.statusCode}: ${response.body}');
+      print(' Groq error ${response.statusCode}: ${response.body}');
       return null;
     }
   }

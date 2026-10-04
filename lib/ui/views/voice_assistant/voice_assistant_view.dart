@@ -100,12 +100,12 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
           ),
         );
       },
-    );
+    ));
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // HEADER — minimal, no back button
-  // ─────────────────────────────────────────
+  // ----
   Widget _buildHeader(
       VoiceAssistantViewModel viewModel, LanguageProvider languageProvider) {
     return Padding(
@@ -184,9 +184,9 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
     );
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // RECOGNIZED TEXT — shown above orb
-  // ─────────────────────────────────────────
+  // ----
   Widget _buildRecognizedText(String text) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 40.w),
@@ -206,9 +206,9 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
     ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // EMERGENCY RESPONSE — card below orb
-  // ─────────────────────────────────────────
+  // ----
   Widget _buildEmergencyResponse(
       VoiceAssistantViewModel viewModel, LanguageProvider languageProvider) {
     final emergencyType = viewModel.detectedEmergencyType;
@@ -310,9 +310,9 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
         .shimmer(duration: 1200.ms, color: Colors.white.withOpacity(0.15));
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // FIX 3: NOT AN EMERGENCY CARD
-  // ─────────────────────────────────────────
+  // ----
   Widget _buildNotEmergencyCard(
       VoiceAssistantViewModel viewModel, LanguageProvider languageProvider) {
     return Container(
@@ -382,9 +382,9 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
     ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.15, end: 0);
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // QUICK COMMANDS — bottom bar
-  // ─────────────────────────────────────────
+  // ----
   Widget _buildQuickCommands(
       VoiceAssistantViewModel viewModel, LanguageProvider languageProvider) {
     return Container(
@@ -472,9 +472,9 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
     );
   }
 
-  // ─────────────────────────────────────────
+  // ----
   // HELPERS
-  // ─────────────────────────────────────────
+  // ----
   IconData _getIconData(String iconName) {
     switch (iconName) {
       case 'monitor_heart':
@@ -580,7 +580,7 @@ class VoiceAssistantView extends StackedView<VoiceAssistantViewModel> {
   }
 }
 
-// ─── App lifecycle observer ───────────────────────────────────────────────────
+// --- App lifecycle observer ----
 // Stops TTS and mic when user backgrounds the app (home button, lock screen,
 // incoming call, notification pull-down, or any other interruption).
 
