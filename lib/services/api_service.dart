@@ -317,11 +317,14 @@ class ApiService {
 
   Future<void> registerFcmToken(String token, String deviceInfo) async {
     try {
-      await _dio.post('/users/fcm-tokens', data: {
+      final res = await _dio.post('/users/fcm-tokens', data: {
         'token': token,
         'device_info': deviceInfo,
       });
-    } catch (_) {} // Silent fail
+      print('[ApiService] FCM token registered: ' + res.statusCode.toString());
+    } catch (e) {
+      print('[ApiService] FCM registration error: ' + e.toString());
+    }
   }
 
   Future<void> deleteFcmToken(String token) async {

@@ -12,6 +12,7 @@ import 'package:hive/hive.dart';
 import 'dart:async';
 import '../../../models/medical_profile.dart';
 import '../../../models/department.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -135,6 +136,17 @@ class _LoginViewState extends State<LoginView> {
         );
         final box = Hive.box<MedicalProfile>('medicalProfile');
         await box.put('profile', profile);
+      }
+
+            // Register FCM token for push notifications
+      try {
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null) {
+          await _apiService.registerFcmToken(fcmToken, 'Flutter App');
+          print('[Login] Registered FCM token: $fcmToken');
+        }
+      } catch (fcmError) {
+        print('[Login] FCM registration skipped/failed: $fcmError');
       }
 
       // Navigate to main app

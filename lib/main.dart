@@ -105,24 +105,41 @@ void main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      print('[FCM] Firebase initialized');
 
-      // Request permission
-      await FirebaseMessaging.instance.requestPermission();
+      // Request notification permission (alert + badge + sound)
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      print('[FCM] Permission: ${settings.authorizationStatus}');
 
-      // Sync FCM token if logged in
-      if (isLoggedIn) {
-        final token = await FirebaseMessaging.instance.getToken();
-        if (token != null) {
-          await apiService.registerFcmToken(token, 'Flutter App');
-        }
-
-        // Listen to token refresh
-        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-          apiService.registerFcmToken(newToken, 'Flutter App');
-        });
+      // FIX: Register FCM token for ALL logged-in users (workers AND officers).
+      // Previously this was gated behind isLoggedIn which is a local SharedPrefs
+      // check - safe to always register since backend upserts the token.
+      final token = await FirebaseMessaging.instance.getToken();
+      print('[FCM] Token: $token');
+      if (token != null) {
+        await apiService.registerFcmToken(token, 'Flutter App');
+        print('[FCM] Token registered with backend');
+      } else {
+        print('[FCM] Token is null - permission may be denied or Play Services unavailable');
       }
+
+      // Listen to token refresh and re-register automatically
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+        print('[FCM] Token refreshed, re-registering');
+        apiService.registerFcmToken(newToken, 'Flutter App');
+      });
+
+      // Handle FCM messages received while app is in foreground
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        print('[FCM] Foreground: ${message.notification?.title} - ${message.notification?.body}');
+      });
+
     } catch (e) {
-      print('Firebase initialization failed: $e');
+      print('[FCM] Firebase initialization failed: $e');
     }
   });
 }

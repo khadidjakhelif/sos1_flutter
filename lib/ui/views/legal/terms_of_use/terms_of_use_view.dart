@@ -10,17 +10,18 @@ class TermsOfUseView extends ViewModelBuilderWidget<TermsOfUseViewModel> {
   const TermsOfUseView({Key? key}) : super(key: key);
 
   @override
-  TermsOfUseViewModel viewModelBuilder(BuildContext context) => TermsOfUseViewModel();
+  TermsOfUseViewModel viewModelBuilder(BuildContext context) =>
+      TermsOfUseViewModel();
 
   @override
-  Widget builder(BuildContext context, TermsOfUseViewModel viewModel, Widget? child) {
+  Widget builder(
+      BuildContext context, TermsOfUseViewModel viewModel, Widget? child) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(viewModel),
-
             Expanded(
               child: Consumer<LanguageProvider>(
                 builder: (context, lp, child) => SingleChildScrollView(
@@ -33,19 +34,24 @@ class TermsOfUseView extends ViewModelBuilderWidget<TermsOfUseViewModel> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [Colors.black, Colors.red[900]!]),
+                          gradient: LinearGradient(
+                              colors: [Colors.black, Colors.red[900]!]),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
                           children: [
-                            Icon(Icons.description, size: 64, color: Colors.white),
+                            Icon(Icons.description,
+                                size: 64, color: Colors.white),
                             const SizedBox(height: 12),
                             Text(
                               lp.translate('app_name'),
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineMedium
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
                             Text(
                               lp.translate('terms_of_use'),
@@ -142,25 +148,28 @@ class TermsOfUseView extends ViewModelBuilderWidget<TermsOfUseViewModel> {
             Text(
               lp.translate('emergency_numbers_title'),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildEmergencyButton('SAMU', '15', Colors.blue[700]!),
-                _buildEmergencyButton(lp.translate('police'), '17', Colors.green[700]!),
+                _buildEmergencyButton('SAMU', '16', Colors.blue[700]!),
+                _buildEmergencyButton(
+                    lp.translate('police'), '17', Colors.green[700]!),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildEmergencyButton(lp.translate('fire_department'), '14', Colors.orange[700]!),
-                _buildEmergencyButton(lp.translate('civil_protection'), '14', Colors.red[700]!),
+                _buildEmergencyButton(
+                    lp.translate('fire_department'), '14', Colors.orange[700]!),
+                _buildEmergencyButton(
+                    lp.translate('civil_protection'), '14', Colors.red[700]!),
               ],
             ),
           ],
@@ -202,15 +211,16 @@ class TermsOfUseView extends ViewModelBuilderWidget<TermsOfUseViewModel> {
           children: [
             Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.amber[800], size: 28),
+                Icon(Icons.warning_amber_rounded,
+                    color: Colors.amber[800], size: 28),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     lp.translate('disclaimer_title'),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.amber[800],
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: Colors.amber[800],
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
               ],
@@ -235,7 +245,10 @@ class TermsOfUseView extends ViewModelBuilderWidget<TermsOfUseViewModel> {
           children: [
             Text(
               lp.translate('responsibilities_title'),
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Text(
@@ -274,10 +287,12 @@ class TermsOfUseView extends ViewModelBuilderWidget<TermsOfUseViewModel> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [Colors.blue[600]!, Colors.blue[800]!]),
+                        gradient: LinearGradient(
+                            colors: [Colors.blue[600]!, Colors.blue[800]!]),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.school, color: Colors.white, size: 16),
+                      child: const Icon(Icons.school,
+                          color: Colors.white, size: 16),
                     );
                   },
                   fit: BoxFit.contain,
