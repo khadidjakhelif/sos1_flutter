@@ -497,6 +497,9 @@ class EmergencyModeView extends StackedView<EmergencyModeViewModel> {
     final isUser = isWorker; // Aliased for distant code compat
 
     if (isSystem) {
+      if (message.text.contains('Emergency triggered at location:')) {
+        return const SizedBox.shrink();
+      }
       return Align(
         alignment: Alignment.center,
         child: Container(
