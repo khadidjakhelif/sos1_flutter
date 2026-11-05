@@ -6,7 +6,7 @@ import 'package:sos1/models/department.dart';
 
 class ApiService {
   static const String baseUrl =
-      String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8000');
+      String.fromEnvironment('API_URL', defaultValue: 'https://sosbackend-production-c747.up.railway.app');
 
   static const String _tokenKey = 'jwt_token';
   static const String _userKey = 'current_user';

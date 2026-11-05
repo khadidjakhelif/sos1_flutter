@@ -152,6 +152,7 @@ class _LoginViewState extends State<LoginView> {
       // Navigate to main app
       _navigationService.clearStackAndShow(Routes.voiceAssistantView);
     } on DioException catch (e) {
+      print('[Login Error] ${e.type} - ${e.message} - Response: ${e.response?.statusCode} ${e.response?.data}');
       setState(() {
         final data = e.response?.data;
         if (data is Map) {

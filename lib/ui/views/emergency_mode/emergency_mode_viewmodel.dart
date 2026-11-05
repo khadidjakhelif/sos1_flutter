@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:sos1/models/emergency_history.dart';
 import 'package:sos1/models/emergency_resolution.dart';
@@ -286,7 +286,7 @@ class EmergencyModeViewModel extends BaseViewModel {
           final chatMsg = ChatMessage.fromBackend(msgJson);
           final isNew = _aiAssistant.addBackendMessage(chatMsg);
           // If this is a new officer message, inject it into AI context
-          if (isNew && chatMsg.senderRole == 'safety_officer') {
+          if (isNew && (chatMsg.senderRole == 'safety_officer' || chatMsg.senderRole == 'company_admin' || chatMsg.senderRole == 'super_admin')) {
             _aiAssistant.injectOfficerMessage(chatMsg.text);
             // Read it aloud via TTS
             _aiTts.speak(chatMsg.text, urgent: true, interrupt: false);
